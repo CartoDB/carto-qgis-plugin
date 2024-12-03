@@ -14,8 +14,10 @@ from qgis.core import (
     QgsMapLayer,
     Qgis,
     QgsApplication,
+    QgsMessageLog
 )
 from qgis.PyQt.QtCore import QObject, pyqtSignal, QCoreApplication
+
 
 from qgis.utils import iface
 
@@ -34,7 +36,7 @@ class CartoConnection(QObject):
     def provider_connections(self):
         if self._connections is None:
             try:
-                connections = CARTO_API.connections()
+                connections = CARTO_API.connections()  # Fetch connections from the API
                 self._connections = [
                     ProviderConnection(
                         connection["id"],
@@ -44,8 +46,12 @@ class CartoConnection(QObject):
                     for connection in connections
                 ]
             except Exception as e:
+                QgsMessageLog.logMessage(
+                    f"Error fetching connections: {e}", "Carto Plugin", Qgis.Critical
+                )
                 self._connections = []
         return self._connections
+
 
     def clear_connections_cache(self):
         self._connections = None
@@ -56,9 +62,25 @@ class CartoConnection(QObject):
             self.connections_changed.emit()
         except Exception as e:
             print(e)
+    def refresh_connections(self):
+        """
+        Refresh the list of connections by clearing the cache and emitting a signal.
+        """
+        try:
+            self.clear_connections_cache()  # Clear the cache
+            self.provider_connections()  # Re-fetch connections to ensure the cache is updated
+            self.connections_changed.emit()  # Notify listeners that connections have changed
+        except Exception as e:
+            iface.messageBar().pushMessage(
+                f"Failed to refresh connections: {e}",
+                level=Qgis.Critical,
+                duration=5,
+            )
 
 
 CARTO_CONNECTION = CartoConnection()
+CARTO_CONNECTION.refresh_connections()
+
 
 
 class ProviderConnection:

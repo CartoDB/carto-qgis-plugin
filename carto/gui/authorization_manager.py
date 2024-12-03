@@ -11,6 +11,10 @@ from qgis.PyQt.QtWidgets import QAction, QPushButton
 from qgis.core import Qgis
 from qgis.gui import QgsMessageBarItem
 from qgis.utils import iface
+from qgis.core import QgsSettings
+from qgis.core import QgsMessageLog
+
+import requests
 
 from carto.gui.authorizedialog import AuthorizeDialog
 from carto.gui.authorizationsuccessdialog import AuthorizationSuccessDialog
@@ -34,19 +38,35 @@ class AuthorizationManager(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self.status: AuthState = AuthState.NotAuthorized
+        self.token = None
         self._workflow: Optional[OAuthWorkflow] = None
         self.oauth_close_timer: Optional[QTimer] = None
 
         self._authorizing_message = None
         self._authorization_failed_message = None
-
         self.queued_callbacks = []
 
         self.login_action = QAction(self.tr("Log In…"))
         self.login_action.setIcon(icon("carto.svg"))
         self.login_action.triggered.connect(self.login)
+
+        # Load token and validate
+        self.load_token()
+        self._validate_token()  # Check if the token is valid
+
+
+    def set_token(self, token):
+        self.token = token
+        QgsSettings().setValue("CartoPlugin/AuthToken", token)  # Save token persistently
+
+    def load_token(self):
+        self.token = QgsSettings().value("CartoPlugin/AuthToken", None)  # Load token on startup
+
+    def load_token(self):
+        self.token = QgsSettings().value("CartoPlugin/AuthToken", None)
+        if self.token:
+            self.status = "Logged In"  # Update status if a token exists
 
     def _set_status(self, status: AuthState):
         """
@@ -82,6 +102,34 @@ class AuthorizationManager(QObject):
             self.attempt_authorize()
         elif self.status == AuthState.Authorized:
             self.deauthorize()
+
+    def _validate_token(self):
+        """
+        Validates the token and updates the status accordingly.
+        """
+        if self.token:
+            url = "https://{username}.carto.com/api/v3/me"  # Replace with your validation endpoint
+            headers = {"Authorization": f"Bearer {self.token}"}
+            try:
+                response = requests.get(url, headers=headers)
+                if response.status_code == 200:
+                    self.status = AuthState.Authorized
+                    CARTO_API.set_token(self.token)
+                    QgsMessageLog.logMessage("Token validated successfully.", "Carto Plugin", Qgis.Info)
+                else:
+                    self.status = AuthState.NotAuthorized
+                    QgsMessageLog.logMessage(
+                        f"Token validation failed: {response.status_code} {response.reason}",
+                        "Carto Plugin",
+                        Qgis.Warning,
+                    )
+            except Exception as e:
+                self.status = AuthState.NotAuthorized
+                QgsMessageLog.logMessage(f"Token validation exception: {str(e)}", "Carto Plugin", Qgis.Critical)
+        else:
+            self.status = AuthState.NotAuthorized
+
+
 
     def authorization_callback(self, callback) -> bool:
         """
@@ -182,11 +230,12 @@ class AuthorizationManager(QObject):
 
     def _authorization_success(self, token: str):
         """
-        Triggered when an authorization succeeds
+        Triggered when an authorization succeeds.
         """
         self._cleanup_messages()
 
-        CARTO_API.set_token(token)
+        self.set_token(token)  # Save token persistently
+        CARTO_API.set_token(token)  # Set token for API usage
         self._set_status(AuthState.Authorized)
         iface.messageBar().pushSuccess(self.tr("Carto"), self.tr("Authorized"))
 
@@ -199,6 +248,8 @@ class AuthorizationManager(QObject):
         if dlg.logout:
             self.deauthorize()
 
+
+
     def cleanup(self):
         """
         Must be called when the authorization handler needs to be gracefully
@@ -208,14 +259,18 @@ class AuthorizationManager(QObject):
 
     def _clean_workflow(self):
         """
-        Cleans up the oauth workflow
+        Cleans up the OAuth workflow
         """
         if self._workflow and not sip.isdeleted(self._workflow):
-            self.oauth_close_timer = QTimer(self)
-            self.oauth_close_timer.setSingleShot(True)
-            self.oauth_close_timer.setInterval(1000)
-            self.oauth_close_timer.timeout.connect(self._close_auth_server)
-            self.oauth_close_timer.start()
+            try:
+                self._workflow.close_server()
+                self._workflow.quit()
+                self._workflow.wait()
+            except Exception as e:
+                QgsMessageLog.logMessage(f"Failed to clean up OAuth workflow: {str(e)}", "Carto Plugin", Qgis.Warning)
+            finally:
+                self._workflow.deleteLater()
+                self._workflow = None
 
     def _close_auth_server(self, force_close=False):
         """
