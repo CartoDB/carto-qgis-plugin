@@ -341,31 +341,35 @@ class TableItem(QgsDataItem):
 
         QgsProject.instance().addMapLayer(layer)
         metadata = layer_metadata(layer)
-        if not metadata["can_write"]:
+
+        # Only check for primary key if editing is about to start
+        if metadata["can_write"] and not metadata["pk"]:
+            # Do not show the dialog immediately during visualization
             iface.messageBar().pushMessage(
-                "Read-only",
-                "No permission to write. Local changes will not be saved to the original table",
+                "Layer added for visualization. Editing requires a primary key.",
+                level=Qgis.Info,
+                duration=10,
+            )
+
+            # Attach an action to trigger the PK dialog when editing starts
+            layer.beforeEditingStarted.connect(lambda: self._prompt_for_primary_key(layer, metadata))
+            
+    def _prompt_for_primary_key(self, layer, metadata):
+        # Show the primary key dialog when editing starts
+        columns = [c["name"] for c in metadata["columns"]]
+        dialog = SelectPrimaryKeyDialog(columns)
+        dialog.exec_()
+
+        if dialog.pk:
+            metadata["pk"] = dialog.pk
+            save_layer_metadata(layer, metadata)
+        else:
+            iface.messageBar().pushMessage(
+                "Missing PK",
+                "The table has no PK defined. Local changes will not be saved to the original table",
                 level=Qgis.Warning,
                 duration=10,
             )
-            return
-
-        if not metadata["pk"]:
-            columns = [c["name"] for c in metadata["columns"]]
-            dialog = SelectPrimaryKeyDialog(columns)
-            dialog.exec_()
-            if dialog.pk:
-                metadata["pk"] = dialog.pk
-                save_layer_metadata(layer, metadata)
-            else:
-                iface.messageBar().pushMessage(
-                    "Missing PK",
-                    "The table has no PK defined. Local changes will not be saved to the original table",
-                    level=Qgis.Warning,
-                    duration=10,
-                )
-        self.tasks.remove(task)
-
 
 class RootCollection(QgsDataCollectionItem):
     def __init__(self):
