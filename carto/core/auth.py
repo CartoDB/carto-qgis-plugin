@@ -115,9 +115,8 @@ class CallbackHandler(BaseHTTPRequestHandler):
                         "webpages",
                         img,
                     )
-                    base64_img = base64.b64encode(open(img_path, "rb").read()).decode(
-                        "utf-8"
-                    )
+                    with open(img_path, "rb") as img_file:
+                        base64_img = base64.b64encode(img_file.read()).decode("utf-8")
                     html = html.replace(img, f"data:image/png;base64,{base64_img}")
 
                 self.wfile.write(html.encode())

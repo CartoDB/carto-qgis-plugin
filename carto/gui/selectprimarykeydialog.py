@@ -5,6 +5,8 @@ from qgis.gui import QgsMessageBar
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QSizePolicy, QFileDialog
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QDesktopServices
 
 
 WIDGET, BASE = uic.loadUiType(
@@ -30,3 +32,7 @@ class SelectPrimaryKeyDialog(BASE, WIDGET):
     def okClicked(self):
         self.pk = self.comboPK.currentText()
         self.accept()
+
+    def showHelp(self):
+        # Replace the URL with the documentation link
+        QDesktopServices.openUrl(QUrl("https://docs.carto.com/qgis-plugi"))

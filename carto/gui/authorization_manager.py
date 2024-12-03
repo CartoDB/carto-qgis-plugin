@@ -114,16 +114,21 @@ class AuthorizationManager(QObject):
                 response = requests.get(url, headers=headers)
                 if response.status_code == 200:
                     self.status = AuthState.Authorized
-                    CARTO_API.set_token(self.token)  # Set token for future API usage
+                    CARTO_API.set_token(self.token)
                     QgsMessageLog.logMessage("Token validated successfully.", "Carto Plugin", Qgis.Info)
                 else:
                     self.status = AuthState.NotAuthorized
-                    QgsMessageLog.logMessage("Invalid token. User must log in again.", "Carto Plugin", Qgis.Warning)
+                    QgsMessageLog.logMessage(
+                        f"Token validation failed: {response.status_code} {response.reason}",
+                        "Carto Plugin",
+                        Qgis.Warning,
+                    )
             except Exception as e:
                 self.status = AuthState.NotAuthorized
-                QgsMessageLog.logMessage(f"Token validation failed: {e}", "Carto Plugin", Qgis.Critical)
+                QgsMessageLog.logMessage(f"Token validation exception: {str(e)}", "Carto Plugin", Qgis.Critical)
         else:
             self.status = AuthState.NotAuthorized
+
 
 
     def authorization_callback(self, callback) -> bool:
@@ -254,14 +259,18 @@ class AuthorizationManager(QObject):
 
     def _clean_workflow(self):
         """
-        Cleans up the oauth workflow
+        Cleans up the OAuth workflow
         """
         if self._workflow and not sip.isdeleted(self._workflow):
-            self.oauth_close_timer = QTimer(self)
-            self.oauth_close_timer.setSingleShot(True)
-            self.oauth_close_timer.setInterval(1000)
-            self.oauth_close_timer.timeout.connect(self._close_auth_server)
-            self.oauth_close_timer.start()
+            try:
+                self._workflow.close_server()
+                self._workflow.quit()
+                self._workflow.wait()
+            except Exception as e:
+                QgsMessageLog.logMessage(f"Failed to clean up OAuth workflow: {str(e)}", "Carto Plugin", Qgis.Warning)
+            finally:
+                self._workflow.deleteLater()
+                self._workflow = None
 
     def _close_auth_server(self, force_close=False):
         """
