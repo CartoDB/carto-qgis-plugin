@@ -8,6 +8,7 @@ from qgis.PyQt.QtCore import QObject
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.utils import iface
 from qgis.core import Qgis
+from qgis.core import QgsMessageLog
 from carto.gui.authorizedialog import AuthorizeDialog
 from carto.core.utils import (
     setting,
@@ -77,6 +78,7 @@ class CartoApi(QObject):
 
     def connections(self):
         try:
+            
             connections = self.get_json("connections")
             return [
                 {
@@ -87,6 +89,9 @@ class CartoApi(QObject):
                 for connection in connections
             ]
         except Exception as e:
+            QgsMessageLog.logMessage(
+                f"Error fetching connections: {e}", "Carto Plugin", Qgis.Critical
+            )
             return []
 
     def databases(self, connectionid):

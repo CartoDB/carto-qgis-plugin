@@ -14,9 +14,12 @@ from qgis.core import (
     QgsVectorTileLayer,
     QgsMessageOutput,
     QgsApplication,
+    QgsMessageLog
 )
 from qgis.utils import iface
 from functools import partial
+
+
 
 from carto.core.connection import CARTO_CONNECTION
 from carto.core.layers import layer_metadata, save_layer_metadata
@@ -27,6 +30,8 @@ from carto.gui.selectprimarykeydialog import SelectPrimaryKeyDialog
 from carto.gui.authorization_manager import AUTHORIZATION_MANAGER
 from carto.core.downloadtabletask import DownloadTableTask
 from carto.gui.utils import icon
+from carto.core.enums import AuthState
+
 
 
 cartoIcon = icon("carto.svg")
@@ -114,16 +119,47 @@ class ConnectionsItem(QgsDataCollectionItem):
     def __init__(self):
         QgsDataCollectionItem.__init__(self, None, "Connections", "/Connections")
         self.setIcon(cartoIcon)
+        self._children = []  # Store children manually
         self.populate()
 
     def createChildren(self):
+        """
+        Populate children based on available connections.
+        """
         children = []
         connections = CARTO_CONNECTION.provider_connections()
         for connection in connections:
             item = ConnectionItem(self, connection)
             sip.transferto(item, self)
             children.append(item)
+        self._children = children  # Save the new list of children
         return children
+
+    def actions(self, parent):
+        # Add Refresh action
+        actions = []
+
+        refresh_action = QAction(QIcon(), "Refresh", parent)
+        refresh_action.triggered.connect(self.refresh_connections)
+        actions.append(refresh_action)
+
+        return actions
+
+    def refresh_connections(self):
+        """
+        Trigger a refresh of the connections by clearing and re-adding children.
+        """
+        iface.messageBar().pushMessage("Refreshing connections...", level=Qgis.Info, duration=3)
+        try:
+            CARTO_CONNECTION.refresh_connections()  # Refresh connections from the API
+            self._children = []  # Clear the stored children
+            self.populate()  # Re-populate the children
+            iface.messageBar().pushMessage("Connections refreshed successfully", level=Qgis.Success, duration=3)
+        except Exception as e:
+            iface.messageBar().pushMessage(f"Failed to refresh connections: {e}", level=Qgis.Critical, duration=5)
+
+
+
 
 
 class ConnectionItem(QgsDataCollectionItem):
@@ -332,18 +368,33 @@ class TableItem(QgsDataItem):
 
 
 class RootCollection(QgsDataCollectionItem):
-
     def __init__(self):
         QgsDataCollectionItem.__init__(self, None, "CARTO", "/Carto/root")
         self.setIcon(cartoIcon)
-        # CARTO_CONNECTION.connections_changed.connect(self.connectionsChanged)
+
+        # Listen for status changes
+        AUTHORIZATION_MANAGER.status_changed.connect(self.update_status)
+
+        # Set initial state
+        self.update_status(AUTHORIZATION_MANAGER.status)
+
+    def update_status(self, status):
+        if status == AuthState.Authorized:
+            self.setName("CARTO")
+        else:
+            self.setName("CARTO (not logged in)")
+    
+    def actions(self, parent):
+        actions = []
+        login_action = AUTHORIZATION_MANAGER.login_action
+        actions.append(login_action)
+        return actions
 
     def createChildren(self):
+        if not AUTHORIZATION_MANAGER.is_authorized():
+            return []  # Prevent expansion if not logged in
+
         self.connectionsItem = ConnectionsItem()
         self.basemapsItem = BasemapsCollection()
         children = [self.connectionsItem, self.basemapsItem]
         return children
-
-    def actions(self, parent):
-        actions = [AUTHORIZATION_MANAGER.login_action]
-        return actions
