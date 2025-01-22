@@ -9,7 +9,7 @@ from qgis.core import NULL
 NAMESPACE = "carto"
 TOKEN = "token"
 
-MAX_ROWS = 1000000
+MAX_ROWS = 10000000
 
 setting_types = {}
 

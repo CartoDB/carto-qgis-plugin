@@ -261,9 +261,15 @@ def layers_folder():
     return folder
 
 
-def filepath_for_table(connectionid, databaseid, schemaid, tableid):
+def filepath_for_table(connection_name, database, schema, table, extension=".gpkg"):
     return os.path.join(
-        layers_folder(), connectionid, databaseid, schemaid, tableid + ".gpkg"
+        os.path.expanduser("~"),
+        ".carto",
+        "data",
+        connection_name,
+        database,
+        schema,
+        f"{table}{extension}"
     )
 
 

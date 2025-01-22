@@ -218,7 +218,7 @@ class SchemaItem(QgsDataCollectionItem):
             dialog.schema.clear_tables_cache()
 
 
-MAX_TABLE_SIZE = 50
+MAX_TABLE_SIZE = 500
 
 
 class TableItem(QgsDataItem):

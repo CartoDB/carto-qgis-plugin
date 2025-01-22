@@ -64,20 +64,21 @@ class DownloadTableTask(QgsTask):
             query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where})"
             ret = CARTO_API.execute_query(
                 self.table.schema.database.connection.name,
-                f"CALL cartobq.us.EXPORT_WITH_GDAL('{query}','GPKG','{self.table.tableid}');",
+                f"CALL cartobq.us.EXPORT_GEOPARQUET('{query}');",
             )
             url = ret["rows"][0]["result"]
-            geopackage_file = filepath_for_table(
+            parquet_file = filepath_for_table(
                 self.table.schema.database.connection.name,
                 self.table.schema.database.databaseid,
                 self.table.schema.schemaid,
                 self.table.tableid,
+                extension=".parquet"
             )
-            os.makedirs(os.path.dirname(geopackage_file), exist_ok=True)
-            download_file(url, geopackage_file)
+            os.makedirs(os.path.dirname(parquet_file), exist_ok=True)
+            download_file(url, parquet_file)
 
-            gpkglayer = QgsVectorLayer(geopackage_file, self.table.name, "ogr")
-            gpkglayer.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+            parquet_layer = QgsVectorLayer(parquet_file, self.table.name, "ogr")
+            parquet_layer.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
 
             layer_metadata = {
                 "pk": self.table.pk(),
@@ -87,8 +88,8 @@ class DownloadTableTask(QgsTask):
                 "schema_changed": False,
                 "provider_type": self.table.schema.database.connection.provider_type,
             }
-            save_layer_metadata(gpkglayer, layer_metadata)
-            self.layer = gpkglayer
+            save_layer_metadata(parquet_layer, layer_metadata)
+            self.layer = parquet_layer
             return True
         except Exception:
             self.exception = traceback.format_exc()
@@ -221,7 +222,7 @@ class DownloadTableTask(QgsTask):
                 self.table.schema.database.connection.name,
                 self.table.schema.database.databaseid,
                 self.table.schema.schemaid,
-                self.table.tableid,
+                self.table.tableid
             )
             os.makedirs(os.path.dirname(geopackage_file), exist_ok=True)
 
