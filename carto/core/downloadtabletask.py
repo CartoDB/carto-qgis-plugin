@@ -50,8 +50,8 @@ class DownloadTableTask(QgsTask):
 
     def run(self):
         if self.table.schema.database.connection.provider_type == "bigquery":
-            return self._download_using_sql()
-            # self._download_bigquery()
+            # return self._download_using_sql()
+            return self._download_bigquery()
         else:
             return self._download_using_sql()
 
@@ -61,17 +61,22 @@ class DownloadTableTask(QgsTask):
             quoted_fqn = quote_for_provider(
                 fqn, self.table.schema.database.connection.provider_type
             )
-            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where}"
+            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where})"
             ret = CARTO_API.execute_query(
                 self.table.schema.database.connection.name,
-                f"CALL cartobq.us.EXPORT_WITH_GDAL('''{query}''','GPKG',NULL,'{self.table.tableid}');",
+                f"CALL cartobq.us.EXPORT_WITH_GDAL('{query}','GPKG','{self.table.tableid}');",
             )
             url = ret["rows"][0]["result"]
-            geopackage_file = self._filepath()
+            geopackage_file = filepath_for_table(
+                self.table.schema.database.connection.name,
+                self.table.schema.database.databaseid,
+                self.table.schema.schemaid,
+                self.table.tableid,
+            )
             os.makedirs(os.path.dirname(geopackage_file), exist_ok=True)
             download_file(url, geopackage_file)
 
-            gpkglayer = QgsVectorLayer(geopackage_file, self.name, "ogr")
+            gpkglayer = QgsVectorLayer(geopackage_file, self.table.name, "ogr")
             gpkglayer.setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
 
             layer_metadata = {
