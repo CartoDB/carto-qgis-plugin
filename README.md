@@ -11,7 +11,7 @@ A [QGIS](https://qgis.org) plugin plugin to access, visualize, and edit geospati
 
 The CARTO plugin is available in the [QGIS Plugins Repository](https://plugins.qgis.org/plugins/carto/). To install the latest version, use the QGIS Plugin Manager and search for the CARTO QGIS plugin.
 
-Alternatively, you can get the latest version from the [release page](https://github.com/koordinates/carto-qgis-plugin/releases/latest), then open the QGIS Plugin manager and install the downloaded zip file.
+Alternatively, you can get the latest version from the [release page](https://github.com/cartodb/carto-qgis-plugin/releases/latest), then open the QGIS Plugin manager and install the downloaded zip file.
 
 This plugin is compatible with QGIS v3.16 or later.
 
