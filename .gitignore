@@ -163,3 +163,5 @@ cython_debug/
 carto.zip
 carto/.DS_Store
 carto/gui/.DS_Store
+
+*.zip
