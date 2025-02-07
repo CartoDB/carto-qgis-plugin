@@ -14,22 +14,31 @@ from carto.core.utils import (
     TOKEN,
 )
 import os
+import yaml
 
-
-BASE_URL = "https://workspace-gcp-us-east1.app.carto.com"
-SQL_API_URL = "https://gcp-us-east1.api.carto.com"
 USER_URL = "https://accounts.app.carto.com/users/me"
 
 
 class CartoApi(QObject):
 
     token = None
+    workspace_url = None
+    base_url = None
 
     def __init__(self):
         super().__init__()
 
     def set_token(self, token):
         self.token = token
+
+    def configure_endpoints(self):
+        tenant = self.user().json()["user_metadata"]["tenant_domain"]
+        urls_url = f"https://{tenant}/config.yaml"
+        response = self.get(urls_url)
+        response.raise_for_status()
+        config_content = yaml.safe_load(response.text)
+        self.workspace_url = config_content["apis"]["workspaceUrl"]
+        self.base_url = config_content["apis"]["baseUrl"]
 
     def user(self):
         return self.get(USER_URL)
@@ -38,7 +47,7 @@ class CartoApi(QObject):
         return self.token is not None
 
     def get(self, endpoint, params=None):
-        url = urljoin(BASE_URL, endpoint)
+        url = urljoin(self.workspace_url, endpoint)
         response = requests.get(
             url, headers={"Authorization": f"Bearer {self.token}"}, params=params
         )
@@ -50,7 +59,7 @@ class CartoApi(QObject):
         return response.json()
 
     def execute_query(self, connectionname, query):
-        url = urljoin(SQL_API_URL, f"v3/sql/{connectionname}/query")
+        url = urljoin(self.base_url, f"v3/sql/{connectionname}/query")
         query = f"""
         -- {uuid.uuid4()}
         {query}
@@ -67,7 +76,7 @@ class CartoApi(QObject):
         return _json
 
     def execute_query_post(self, connectionname, query):
-        url = urljoin(SQL_API_URL, f"v3/sql/{connectionname}/query")
+        url = urljoin(self.base_url, f"v3/sql/{connectionname}/query")
         response = requests.post(
             url,
             headers={"Authorization": f"Bearer {self.token}"},

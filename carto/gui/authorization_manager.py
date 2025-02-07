@@ -187,6 +187,7 @@ class AuthorizationManager(QObject):
         self._cleanup_messages()
 
         CARTO_API.set_token(token)
+        CARTO_API.configure_endpoints()
         self._set_status(AuthState.Authorized)
         iface.messageBar().pushSuccess(self.tr("Carto"), self.tr("Authorized"))
 
