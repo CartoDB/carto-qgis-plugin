@@ -47,9 +47,15 @@ class CartoApi(QObject):
         return self.token is not None
 
     def get(self, endpoint, params=None):
+        _params = {}
+        if params:
+            _params = {k: v for k, v in params.items() if v is not None}
+        _params["client"] = "carto-qgis-plugin"
         url = urljoin(self.workspace_url, endpoint)
         response = requests.get(
-            url, headers={"Authorization": f"Bearer {self.token}"}, params=params
+            url,
+            headers={"Authorization": f"Bearer {self.token}"},
+            params=_params,
         )
         return response
 
@@ -64,10 +70,8 @@ class CartoApi(QObject):
         -- {uuid.uuid4()}
         {query}
         """
-        print(query)
-        response = requests.get(
+        response = self.get(
             url,
-            headers={"Authorization": f"Bearer {self.token}"},
             params={"q": query},
         )
         response.raise_for_status()
