@@ -115,11 +115,11 @@ class AuthorizationManager(QObject):
         """
         dlg = AuthorizeDialog(iface.mainWindow())
         if dlg.exec_():
-            self.start_authorization_workflow()
+            self.start_authorization_workflow(dlg.sso_org)
         else:
             self.queued_callbacks = []
 
-    def start_authorization_workflow(self):
+    def start_authorization_workflow(self, sso_org: str):
         """
         Start an authorization process
         """
@@ -128,7 +128,7 @@ class AuthorizationManager(QObject):
 
         self._cleanup_messages()
 
-        self._workflow = OAuthWorkflow()
+        self._workflow = OAuthWorkflow(sso_org)
         self._workflow.error_occurred.connect(self._authorization_error_occurred)
         self._workflow.finished.connect(self._authorization_success)
 

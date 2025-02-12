@@ -8,7 +8,6 @@ from qgis.PyQt.QtCore import QObject
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.utils import iface
 from qgis.core import Qgis
-from carto.gui.authorizedialog import AuthorizeDialog
 from carto.core.utils import (
     setting,
     TOKEN,
@@ -32,7 +31,10 @@ class CartoApi(QObject):
         self.token = token
 
     def configure_endpoints(self):
-        tenant = self.user().json()["user_metadata"]["tenant_domain"]
+        user = self.user().json()
+        print(user)
+
+        # tenant = user["user_metadata"]["tenant_domain"]
         urls_url = f"https://{tenant}/config.yaml"
         response = self.get(urls_url)
         response.raise_for_status()
@@ -57,6 +59,8 @@ class CartoApi(QObject):
             headers={"Authorization": f"Bearer {self.token}"},
             params=_params,
         )
+        print(url, endpoint, self.token)
+        print(f"Response {response}")
         return response
 
     def get_json(self, endpoint, params=None):
@@ -76,7 +80,6 @@ class CartoApi(QObject):
         )
         response.raise_for_status()
         _json = response.json()
-        print(_json)
         return _json
 
     def execute_query_post(self, connectionname, query):
