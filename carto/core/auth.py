@@ -176,6 +176,7 @@ class OAuthWorkflow(QThread):
             "code_challenge": challenge.replace("=", ""),
             "code_challenge_method": "S256",
             "state": state,
+            "ext-sso-discovery-uri": "https://app.carto.com/sso-discovery",
         }
         self.code_verifier = verifier
         self.authorization_url = base_url + urlparse.urlencode(url_parameters)
