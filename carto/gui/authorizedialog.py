@@ -29,6 +29,8 @@ class AuthorizeDialog(BASE, WIDGET):
         self.btnSignup.clicked.connect(self.signup)
         self.btnLoginSSO.clicked.connect(self.login_sso)
 
+        self.sso_org = None
+
         pixmap = img("cartobanner.png")
         self.labelLogo.setPixmap(pixmap)
         self.labelLogo.setScaledContents(True)
