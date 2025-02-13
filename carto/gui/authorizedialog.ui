@@ -99,7 +99,7 @@
     </spacer>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0">
      <property name="rightMargin">
       <number>12</number>
      </property>
@@ -133,6 +133,13 @@
        </property>
        <property name="default">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnLoginSSO">
+       <property name="text">
+        <string>Log In with SSO</string>
        </property>
       </widget>
      </item>

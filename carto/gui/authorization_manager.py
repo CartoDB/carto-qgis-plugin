@@ -42,6 +42,8 @@ class AuthorizationManager(QObject):
         self._authorizing_message = None
         self._authorization_failed_message = None
 
+        self.cancel_button_used = False
+
         self.queued_callbacks = []
 
         self.login_action = QAction(self.tr("Log In…"))
@@ -102,7 +104,6 @@ class AuthorizationManager(QObject):
         Deauthorizes the client
         """
         CARTO_API.set_token(None)
-        print("Deauthorized")
         self._set_status(AuthState.NotAuthorized)
 
     def attempt_authorize(self):
@@ -115,11 +116,11 @@ class AuthorizationManager(QObject):
         """
         dlg = AuthorizeDialog(iface.mainWindow())
         if dlg.exec_():
-            self.start_authorization_workflow()
+            self.start_authorization_workflow(dlg.sso_org)
         else:
             self.queued_callbacks = []
 
-    def start_authorization_workflow(self):
+    def start_authorization_workflow(self, sso_org: str):
         """
         Start an authorization process
         """
@@ -128,7 +129,7 @@ class AuthorizationManager(QObject):
 
         self._cleanup_messages()
 
-        self._workflow = OAuthWorkflow()
+        self._workflow = OAuthWorkflow(sso_org)
         self._workflow.error_occurred.connect(self._authorization_error_occurred)
         self._workflow.finished.connect(self._authorization_success)
 
@@ -137,7 +138,20 @@ class AuthorizationManager(QObject):
         self._authorizing_message = QgsMessageBarItem(
             self.tr("Carto"), self.tr("Authorizing…"), Qgis.MessageLevel.Info
         )
-        iface.messageBar().pushItem(self._authorizing_message)
+
+        self._authorizing_message = iface.messageBar().createMessage(
+            self.tr("Carto"), self.tr("Authorizing…")
+        )
+
+        def button_clicked():
+            self.cancel_button_used = True
+            self._authorization_error_occurred()
+
+        button = QPushButton(self._authorizing_message)
+        button.setText("Cancel")
+        button.pressed.connect(button_clicked)
+        self._authorizing_message.layout().addWidget(button)
+        iface.messageBar().pushWidget(self._authorizing_message, Qgis.Info)
 
         self._workflow.start()
         return False
@@ -228,7 +242,8 @@ class AuthorizationManager(QObject):
         self.oauth_close_timer = None
 
         if self._workflow and not sip.isdeleted(self._workflow):
-            if force_close:
+            if force_close or self.cancel_button_used:
+                self.cancel_button_used = False
                 self._workflow.force_stop()
 
             self._workflow.close_server()

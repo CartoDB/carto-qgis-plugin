@@ -8,7 +8,6 @@ from qgis.PyQt.QtCore import QObject
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.utils import iface
 from qgis.core import Qgis
-from carto.gui.authorizedialog import AuthorizeDialog
 from carto.core.utils import (
     setting,
     TOKEN,
@@ -32,9 +31,10 @@ class CartoApi(QObject):
         self.token = token
 
     def configure_endpoints(self):
-        tenant = self.user().json()["user_metadata"]["tenant_domain"]
+        user = self.user().json()
+        tenant = user["user_metadata"]["tenant_domain"]
         urls_url = f"https://{tenant}/config.yaml"
-        response = self.get(urls_url)
+        response = self.get(urls_url, verify=False)
         response.raise_for_status()
         config_content = yaml.safe_load(response.text)
         self.workspace_url = config_content["apis"]["workspaceUrl"]
@@ -46,17 +46,29 @@ class CartoApi(QObject):
     def is_logged_in(self):
         return self.token is not None
 
-    def get(self, endpoint, params=None):
+    def get(self, endpoint, params=None, verify=True):
         _params = {}
         if params:
             _params = {k: v for k, v in params.items() if v is not None}
         _params["client"] = "carto-qgis-plugin"
         url = urljoin(self.workspace_url, endpoint)
-        response = requests.get(
-            url,
-            headers={"Authorization": f"Bearer {self.token}"},
-            params=_params,
-        )
+        if verify == False:
+            with requests.packages.urllib3.warnings.catch_warnings():
+                requests.packages.urllib3.disable_warnings(
+                    requests.packages.urllib3.exceptions.InsecureRequestWarning
+                )
+                response = requests.get(
+                    url,
+                    headers={"Authorization": f"Bearer {self.token}"},
+                    params=_params,
+                    verify=verify,
+                )
+        else:
+            response = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {self.token}"},
+                params=_params,
+            )
         return response
 
     def get_json(self, endpoint, params=None):
@@ -76,7 +88,6 @@ class CartoApi(QObject):
         )
         response.raise_for_status()
         _json = response.json()
-        print(_json)
         return _json
 
     def execute_query_post(self, connectionname, query):
