@@ -32,9 +32,7 @@ class CartoApi(QObject):
 
     def configure_endpoints(self):
         user = self.user().json()
-        print(user)
-
-        # tenant = user["user_metadata"]["tenant_domain"]
+        tenant = user["user_metadata"]["tenant_domain"]
         urls_url = f"https://{tenant}/config.yaml"
         response = self.get(urls_url, verify=False)
         response.raise_for_status()

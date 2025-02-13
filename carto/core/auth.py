@@ -157,7 +157,7 @@ class OAuthWorkflow(QThread):
     finished = pyqtSignal(str)
     error_occurred = pyqtSignal()
 
-    def __init__(self, sso_org: str):
+    def __init__(self, sso_org: str = None):
         super().__init__()
 
         self.server = None
@@ -177,8 +177,9 @@ class OAuthWorkflow(QThread):
             "code_challenge_method": "S256",
             "state": state,
             "ext-sso-discovery-uri": "https://app.carto.com/sso-discovery",
-            "organization": sso_org,
         }
+        if sso_org:
+            url_parameters["organization"] = sso_org
         self.code_verifier = verifier
         self.authorization_url = base_url + urlparse.urlencode(url_parameters)
 
