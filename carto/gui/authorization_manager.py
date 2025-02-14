@@ -103,7 +103,7 @@ class AuthorizationManager(QObject):
         """
         Deauthorizes the client
         """
-        CARTO_API.set_token(None)
+        CARTO_API.clear()
         self._set_status(AuthState.NotAuthorized)
 
     def attempt_authorize(self):
