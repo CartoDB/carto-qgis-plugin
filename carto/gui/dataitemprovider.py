@@ -20,6 +20,7 @@ from qgis.utils import iface
 from functools import partial
 
 from carto.core.connection import CARTO_CONNECTION
+from carto.core.api import CARTO_API
 from carto.core.layers import layer_metadata
 from carto.core.utils import MAX_ROWS
 from carto.gui.importdialog import ImportDialog
@@ -353,7 +354,7 @@ class RootCollection(QgsDataCollectionItem):
         connectionsItem = ConnectionsItem(self)
         basemapsItem = BasemapsCollection(self)
         children = [basemapsItem]
-        if AUTHORIZATION_MANAGER.is_authorized():
+        if AUTHORIZATION_MANAGER.is_authorized() and CARTO_API.has_allowed_role():
             children.append(connectionsItem)
         return children
 

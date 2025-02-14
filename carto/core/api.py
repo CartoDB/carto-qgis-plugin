@@ -23,6 +23,8 @@ class CartoApi(QObject):
     token = None
     workspace_url = None
     base_url = None
+    roles = []
+    is_self_hosted = False
 
     def __init__(self):
         super().__init__()
@@ -32,6 +34,7 @@ class CartoApi(QObject):
 
     def configure_endpoints(self):
         user = self.user().json()
+        self.roles = user["app_metadata"]["roles"]
         tenant = user["user_metadata"]["tenant_domain"]
         urls_url = f"https://{tenant}/config.yaml"
         response = self.get(urls_url, verify=False)
@@ -41,9 +44,19 @@ class CartoApi(QObject):
         self.workspace_url = self.workspace_url.rstrip("/") + "/"
         self.base_url = config_content["apis"]["baseUrl"]
         self.base_url = self.base_url.rstrip("/") + "/"
+        self.is_self_hosted = config_content["cartoVersion"]["selfHosted"] != ""
+
+    def clear(self):
+        self.token = None
+        self.roles = []
+        self.workspace_url = None
+        self.base_url = None
 
     def user(self):
         return self.get(USER_URL)
+
+    def has_allowed_role(self):
+        return any([role in ["Admin", "Superadmin", "Editor"] for role in self.roles])
 
     def is_logged_in(self):
         return self.token is not None
@@ -54,7 +67,8 @@ class CartoApi(QObject):
             _params = {k: v for k, v in params.items() if v is not None}
         _params["client"] = "carto-qgis-plugin"
         url = urljoin(self.workspace_url, endpoint)
-        if verify == False:
+
+        if self.is_self_hosted or not verify:
             with requests.packages.urllib3.warnings.catch_warnings():
                 requests.packages.urllib3.disable_warnings(
                     requests.packages.urllib3.exceptions.InsecureRequestWarning
@@ -63,7 +77,7 @@ class CartoApi(QObject):
                     url,
                     headers={"Authorization": f"Bearer {self.token}"},
                     params=_params,
-                    verify=verify,
+                    verify=False,
                 )
         else:
             response = requests.get(
