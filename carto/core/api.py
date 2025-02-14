@@ -38,7 +38,9 @@ class CartoApi(QObject):
         response.raise_for_status()
         config_content = yaml.safe_load(response.text)
         self.workspace_url = config_content["apis"]["workspaceUrl"]
+        self.workspace_url = self.workspace_url.rstrip("/") + "/"
         self.base_url = config_content["apis"]["baseUrl"]
+        self.base_url = self.base_url.rstrip("/") + "/"
 
     def user(self):
         return self.get(USER_URL)
