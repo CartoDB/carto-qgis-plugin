@@ -129,14 +129,14 @@
      <item>
       <widget class="QPushButton" name="btnLoginSSO">
        <property name="text">
-        <string>Log In with SSO</string>
+        <string>Login with SSO</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="btnLogin">
        <property name="text">
-        <string>Log In</string>
+        <string>Login</string>
        </property>
        <property name="default">
         <bool>true</bool>
