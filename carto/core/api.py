@@ -56,7 +56,12 @@ class CartoApi(QObject):
         return self.get(USER_URL)
 
     def has_allowed_role(self):
-        return any([role in ["Admin", "Superadmin", "Editor"] for role in self.roles])
+        return any(
+            [
+                role in ["Admin", "Superadmin", "Editor", "Builder"]
+                for role in self.roles
+            ]
+        )
 
     def is_logged_in(self):
         return self.token is not None
