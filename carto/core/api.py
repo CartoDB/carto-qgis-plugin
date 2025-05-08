@@ -4,14 +4,15 @@ except ImportError:
     from urlparse import urljoin
 import requests
 import uuid
-from qgis.PyQt.QtCore import QObject
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtCore import QObject, QSettings
 from qgis.utils import iface
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsMessageLog, QgsAuthMethodConfig, QgsApplication
 from carto.core.utils import (
     setting,
     TOKEN,
+    set_proxy_values,
 )
+
 import os
 import yaml
 
@@ -28,6 +29,8 @@ class CartoApi(QObject):
 
     def __init__(self):
         super().__init__()
+        self.session = requests.Session()
+        set_proxy_values(self.session)
 
     def set_token(self, token):
         self.token = token
@@ -78,14 +81,14 @@ class CartoApi(QObject):
                 requests.packages.urllib3.disable_warnings(
                     requests.packages.urllib3.exceptions.InsecureRequestWarning
                 )
-                response = requests.get(
+                response = self.session.get(
                     url,
                     headers={"Authorization": f"Bearer {self.token}"},
                     params=_params,
                     verify=False,
                 )
         else:
-            response = requests.get(
+            response = self.session.get(
                 url,
                 headers={"Authorization": f"Bearer {self.token}"},
                 params=_params,
@@ -113,7 +116,7 @@ class CartoApi(QObject):
 
     def execute_query_post(self, connectionname, query):
         url = urljoin(self.base_url, f"v3/sql/{connectionname}/query")
-        response = requests.post(
+        response = self.session.post(
             url,
             headers={"Authorization": f"Bearer {self.token}"},
             data={"q": query},

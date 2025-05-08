@@ -4,7 +4,7 @@ import shutil
 from carto.gui.utils import waitcursor
 
 from qgis.PyQt.QtCore import QSettings, QVariant
-from qgis.core import NULL
+from qgis.core import NULL, QgsMessageLog, Qgis, QgsAuthMethodConfig, QgsApplication
 
 NAMESPACE = "carto"
 TOKEN = "token"
@@ -187,3 +187,40 @@ def prepare_attribute_string(value, isNumeric):
         return prepare_num_string(value)
     else:
         return f"'{value}'"
+
+
+def set_proxy_values(session):
+    settings = QSettings()
+    proxyEnabled = settings.value("proxy/proxyEnabled")
+    if proxyEnabled:
+        proxyType = settings.value("proxy/proxyType")
+        if proxyType != "HttpProxy":
+            QgsMessageLog.logMessage(
+                "Carto: Only HttpProxy is supported " "for connecting to the Carto API",
+                level=Qgis.Warning,
+            )
+            return
+
+        proxyHost = settings.value("proxy/proxyHost")
+        proxyPort = settings.value("proxy/proxyPort")
+        url = f"{proxyHost}:{proxyPort}"
+        authid = settings.value("proxy/authcfg", "")
+        if authid:
+            authConfig = QgsAuthMethodConfig()
+            QgsApplication.authManager().loadAuthenticationConfig(
+                authid, authConfig, True
+            )
+            username = authConfig.config("username")
+            password = authConfig.config("password")
+        else:
+            username = settings.value("proxy/proxyUser")
+            password = settings.value("proxy/proxyPassword")
+
+        if username:
+            tokens = url.split("://")
+            url = f"{tokens[0]}://{username}:{password}@{tokens[-1]}"
+
+        session.proxies["http"] = url
+        session.proxies["https"] = url
+    else:
+        session.proxies = {}

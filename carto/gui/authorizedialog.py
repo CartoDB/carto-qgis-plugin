@@ -42,7 +42,9 @@ class AuthorizeDialog(BASE, WIDGET):
         dlg = SSODialog(self)
         if dlg.exec_():
             name = dlg.sso_org
-            response = requests.get(
+            session = requests.Session()
+            set_proxy_values(session)
+            response = session.get(
                 f"https://accounts.app.carto.com/accounts/{name}/auth0_org_id"
             )
             orgid = response.json()["auth0orgId"]
