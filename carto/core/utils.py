@@ -192,6 +192,8 @@ def prepare_attribute_string(value, isNumeric):
 def set_proxy_values(session):
     settings = QSettings()
     proxyEnabled = settings.value("proxy/proxyEnabled")
+    if type(proxyEnabled) == str:
+        proxyEnabled = proxyEnabled.lower() == "true"
     if proxyEnabled:
         proxyType = settings.value("proxy/proxyType")
         if proxyType != "HttpProxy":

@@ -5,6 +5,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtGui import QDesktopServices, QPixmap
+from carto.core.utils import set_proxy_values
 
 from carto.gui.ssodialog import SSODialog
 
