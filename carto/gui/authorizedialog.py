@@ -45,16 +45,29 @@ class AuthorizeDialog(BASE, WIDGET):
             name = dlg.sso_org
             session = requests.Session()
             set_proxy_values(session)
-            response = session.get(
-                f"https://accounts.app.carto.com/accounts/{name}/auth0_org_id"
-            )
-            orgid = response.json()["auth0orgId"]
-            if orgid:
-                self.sso_org = orgid
-                self.accept()
-            else:
+            try:
+                response = session.get(
+                    f"https://accounts.app.carto.com/accounts/{name}/auth0_org_id"
+                )
+                orgid = response.json()["auth0orgId"]
+                if orgid:
+                    self.sso_org = orgid
+                    self.accept()
+                else:
+                    QMessageBox.warning(
+                        self, "Invalid organization", "Invalid organization name"
+                    )
+            except requests.exceptions.ConnectTimeout as e:
                 QMessageBox.warning(
-                    self, "Invalid organization", "Invalid organization name"
+                    self,
+                    "Timeout",
+                    "Timeout while connecting to Carto. Please try again.",
+                )
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Error resolving organization",
+                    "Error while resolving organization name . Please try again.",
                 )
 
     def signup(self):
