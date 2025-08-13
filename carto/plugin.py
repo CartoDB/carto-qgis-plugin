@@ -1,6 +1,7 @@
 import os
 
 from qgis.core import QgsProject, QgsApplication
+from qgis.gui import QgsOptionsWidgetFactory
 
 from qgis.PyQt.QtWidgets import QMenu, QAction
 
@@ -8,6 +9,7 @@ from carto.gui.dataitemprovider import DataItemProvider
 from carto.gui.authorizationsuccessdialog import AuthorizationSuccessDialog
 from carto.core.layers import LayerTracker
 from carto.core.api import CARTO_API
+from carto.gui.config_dialog import CartoOptionsPage
 
 from qgis.utils import iface
 
@@ -16,6 +18,18 @@ from carto.gui.utils import icon
 
 
 CARTO_ICON = icon("carto.svg")
+
+
+class CartoOptionsFactory(QgsOptionsWidgetFactory):
+
+    def __init__(self):
+        super(QgsOptionsWidgetFactory, self).__init__()
+
+    def icon(self):
+        return CARTO_ICON
+
+    def createWidget(self, parent):
+        return CartoOptionsPage(parent)
 
 
 class CartoPlugin(object):
@@ -29,6 +43,10 @@ class CartoPlugin(object):
         self.carto_menu = QMenu("CARTO")
         self.carto_menu.setIcon(CARTO_ICON)
         plugins_menu.addMenu(self.carto_menu)
+
+        self.options_factory = CartoOptionsFactory()
+        self.options_factory.setTitle("CARTO")
+        iface.registerOptionsWidgetFactory(self.options_factory)
 
         self.carto_menu.addAction(AUTHORIZATION_MANAGER.login_action)
 
@@ -46,6 +64,8 @@ class CartoPlugin(object):
     def unload(self):
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.dip)
         self.dip = None
+
+        self.iface.unregisterOptionsWidgetFactory(self.options_factory)
 
         QgsProject.instance().layerRemoved.disconnect(self.tracker.layer_removed)
         QgsProject.instance().layerWasAdded.disconnect(self.tracker.layer_added)

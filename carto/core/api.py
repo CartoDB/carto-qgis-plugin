@@ -9,7 +9,6 @@ from qgis.utils import iface
 from qgis.core import Qgis, QgsMessageLog, QgsAuthMethodConfig, QgsApplication
 from carto.core.utils import (
     setting,
-    TOKEN,
     set_proxy_values,
 )
 

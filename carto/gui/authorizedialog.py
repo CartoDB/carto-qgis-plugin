@@ -6,8 +6,11 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtGui import QDesktopServices, QPixmap
 from carto.core.utils import set_proxy_values
+from qgis.core import QgsMessageLog, Qgis
+import traceback
 
 from carto.gui.ssodialog import SSODialog
+from carto.core.utils import log
 
 
 WIDGET, BASE = uic.loadUiType(
@@ -54,6 +57,10 @@ class AuthorizeDialog(BASE, WIDGET):
                     self.sso_org = orgid
                     self.accept()
                 else:
+                    log(
+                        f"Invalid organization name: {name}. Response: {response.text}",
+                        Qgis.Critical,
+                    )
                     QMessageBox.warning(
                         self, "Invalid organization", "Invalid organization name"
                     )
@@ -61,13 +68,18 @@ class AuthorizeDialog(BASE, WIDGET):
                 QMessageBox.warning(
                     self,
                     "Timeout",
-                    "Timeout while connecting to Carto. Please try again.",
+                    "Timeout while connecting to CARTO. Please try again.",
                 )
             except Exception as e:
+                stacktrace = traceback.format_exc()
+                log(
+                    f"Error resolving organization name: {stacktrace}",
+                    Qgis.Critical,
+                )
                 QMessageBox.warning(
                     self,
                     "Error resolving organization",
-                    "Error while resolving organization name . Please try again.",
+                    "Error while resolving organization name. Please try again.",
                 )
 
     def signup(self):

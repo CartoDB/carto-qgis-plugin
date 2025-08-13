@@ -3,6 +3,7 @@ import os
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
+from qgis.core import Qgis, QgsMessageLog
 
 
 def waitcursor(method):

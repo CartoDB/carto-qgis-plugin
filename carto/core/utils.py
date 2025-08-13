@@ -4,22 +4,30 @@ import shutil
 from carto.gui.utils import waitcursor
 
 from qgis.PyQt.QtCore import QSettings, QVariant
-from qgis.core import NULL, QgsMessageLog, Qgis, QgsAuthMethodConfig, QgsApplication
+from qgis.core import (
+    NULL,
+    QgsMessageLog,
+    Qgis,
+    QgsAuthMethodConfig,
+    QgsApplication,
+    QgsSettings,
+)
 
 NAMESPACE = "carto"
-TOKEN = "token"
+
+ENABLE_LOG = "enable_log"
 
 MAX_ROWS = 1000000
 
-setting_types = {}
+setting_types = {ENABLE_LOG: bool}
 
 
 def setSetting(name, value):
-    QSettings().setValue(f"{NAMESPACE}/{name}", value)
+    QgsSettings().setValue(f"{NAMESPACE}/{name}", value)
 
 
 def setting(name):
-    v = QSettings().value(f"{NAMESPACE}/{name}", None)
+    v = QgsSettings().value(f"{NAMESPACE}/{name}", None)
     if setting_types.get(name, str) == bool:
         return str(v).lower() == str(True).lower()
     else:
@@ -226,3 +234,11 @@ def set_proxy_values(session):
         session.proxies["https"] = url
     else:
         session.proxies = {}
+
+
+def log(message, level=Qgis.Info):
+    if level == Qgis.Info:
+        QgsMessageLog.logMessage(message, "CARTO", level)
+    else:
+        if setting(ENABLE_LOG):
+            QgsMessageLog.logMessage(message, "CARTO", level)
