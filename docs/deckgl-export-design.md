@@ -198,6 +198,11 @@ with a warning in the dialog and omitted from the output.
 - **Animations**: temporal data → `TripsLayer` or time-slider widget.
 - **Tiling local data**: for very large local layers, pre-tile to PMTiles and
   bundle as a sidecar file.
+- **Export builder UI**: an interactive dialog where users can customize the
+  deck.gl map before exporting — reorder layers, tweak colours, adjust
+  opacity, pick basemap, configure tooltips, etc. Rather than a blind
+  snapshot of the canvas, this would be a WYSIWYG editor for the output.
+  Significant UI effort; deferred until the core export pipeline is stable.
 
 ---
 
