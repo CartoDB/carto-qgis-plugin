@@ -3,7 +3,7 @@ import os
 from qgis.core import Qgis, QgsProject, QgsApplication
 from qgis.gui import QgsOptionsWidgetFactory
 
-from qgis.PyQt.QtWidgets import QMenu, QAction, QFileDialog
+from qgis.PyQt.QtWidgets import QMenu, QAction
 
 from carto.gui.dataitemprovider import DataItemProvider
 from carto.gui.authorizationsuccessdialog import AuthorizationSuccessDialog
@@ -82,7 +82,7 @@ class CartoPlugin(object):
         self.carto_menu = None
 
     def export_deckgl(self):
-        from carto.core.export.html_generator import generate_html
+        from carto.gui.exportdialog import ExportDeckGLDialog
 
         if not CARTO_API.is_logged_in():
             iface.messageBar().pushMessage(
@@ -93,30 +93,8 @@ class CartoPlugin(object):
             )
             return
 
-        path, _ = QFileDialog.getSaveFileName(
-            self.iface.mainWindow(),
-            "Export deck.gl HTML",
-            "",
-            "HTML Files (*.html)",
-        )
-        if not path:
-            return
-
-        success = generate_html(self.iface.mapCanvas(), path)
-        if success:
-            iface.messageBar().pushMessage(
-                "CARTO",
-                f"Map exported to {path}",
-                level=Qgis.Success,
-                duration=5,
-            )
-        else:
-            iface.messageBar().pushMessage(
-                "CARTO",
-                "Export failed. Check the log for details.",
-                level=Qgis.Critical,
-                duration=5,
-            )
+        dlg = ExportDeckGLDialog(self.iface.mainWindow())
+        dlg.exec_()
 
     def login(self):
         if AUTHORIZATION_MANAGER.is_authorized():

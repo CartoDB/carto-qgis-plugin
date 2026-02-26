@@ -35,14 +35,29 @@ def create_export_token(layers):
         return None
 
     try:
+        import json
+        import datetime
         url = f"{CARTO_API.base_url}v3/tokens"
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        payload = {
+            "name": f"QGIS deck.gl export {timestamp}",
+            "grants": grants,
+            "allowed_apis": ["maps"],
+        }
+        info(f"Token request payload: {json.dumps(payload)}")
         response = CARTO_API.session.post(
             url,
-            headers={"Authorization": f"Bearer {CARTO_API.token}"},
-            json={"grants": grants},
+            headers={
+                "Authorization": f"Bearer {CARTO_API.token}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
         )
-        response.raise_for_status()
-        token = response.json()["token"]
+        if not response.ok:
+            error(f"Token API response ({response.status_code}): {response.text}")
+            response.raise_for_status()
+        result = response.json()
+        token = result.get("token") or result.get("accessToken")
         info(f"Created scoped export token for {len(grants)} table(s)")
         return token
     except Exception as e:

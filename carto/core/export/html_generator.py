@@ -55,29 +55,34 @@ def extract_view_state(canvas):
     }
 
 
-def generate_html(canvas, output_path, basemap=None):
+def generate_html(canvas, output_path, basemap=None, layers=None):
     """Generate a deck.gl HTML file from the current QGIS project.
 
     Args:
         canvas: QgsMapCanvas instance (iface.mapCanvas())
         output_path: File path to write the HTML to
         basemap: Basemap key ("positron", "dark_matter", "voyager") or None for default
+        layers: Optional list of QgsVectorLayer to export. If None, auto-detects
+                all CARTO layers in the project.
 
     Returns:
         True on success, False on failure.
     """
     project = QgsProject.instance()
 
-    # Collect visible CARTO vector layers
-    carto_layers = []
-    for layer in project.mapLayers().values():
-        if not isinstance(layer, QgsVectorLayer):
-            continue
-        if not is_carto_layer(layer):
-            continue
-        if not layer.isValid():
-            continue
-        carto_layers.append(layer)
+    if layers is not None:
+        carto_layers = layers
+    else:
+        # Auto-detect CARTO layers
+        carto_layers = []
+        for layer in project.mapLayers().values():
+            if not isinstance(layer, QgsVectorLayer):
+                continue
+            if not is_carto_layer(layer):
+                continue
+            if not layer.isValid():
+                continue
+            carto_layers.append(layer)
 
     if not carto_layers:
         error("No CARTO layers found in the project")

@@ -16,9 +16,14 @@ from carto.core.layers import (
 from carto.core.logging import debug
 
 
-def _color_to_rgba(qcolor):
-    """Convert a QColor to a [r, g, b, a] list (a is 0-255)."""
-    return [qcolor.red(), qcolor.green(), qcolor.blue(), qcolor.alpha()]
+def _color_to_rgba(qcolor, opacity=1.0):
+    """Convert a QColor to a [r, g, b, a] list (a is 0-255).
+
+    The opacity parameter (0-1) is multiplied into the alpha channel
+    to account for symbol-level opacity in QGIS.
+    """
+    a = int(qcolor.alpha() * opacity)
+    return [qcolor.red(), qcolor.green(), qcolor.blue(), a]
 
 
 def _get_geometry_type(layer):
@@ -36,6 +41,7 @@ def _get_geometry_type(layer):
 def _translate_single_symbol(layer, renderer):
     """Translate a QgsSingleSymbolRenderer to deck.gl style props."""
     symbol = renderer.symbol()
+    sym_opacity = symbol.opacity()  # 0-1, separate from layer opacity
     props = {}
 
     if symbol.symbolLayerCount() > 0:
@@ -43,8 +49,8 @@ def _translate_single_symbol(layer, renderer):
         class_name = type(sl).__name__
 
         if class_name == "QgsSimpleFillSymbolLayer":
-            props["getFillColor"] = _color_to_rgba(sl.color())
-            props["getLineColor"] = _color_to_rgba(sl.strokeColor())
+            props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
+            props["getLineColor"] = _color_to_rgba(sl.strokeColor(), sym_opacity)
             stroke_width = sl.strokeWidth()
             if stroke_width > 0:
                 props["getLineWidth"] = stroke_width
@@ -53,22 +59,22 @@ def _translate_single_symbol(layer, renderer):
                 props["lineWidthMinPixels"] = 0
 
         elif class_name == "QgsSimpleLineSymbolLayer":
-            props["getColor"] = _color_to_rgba(sl.color())
+            props["getColor"] = _color_to_rgba(sl.color(), sym_opacity)
             width = sl.width()
             props["getWidth"] = width if width > 0 else 1
             props["widthMinPixels"] = 1
 
         elif class_name == "QgsSimpleMarkerSymbolLayer":
-            props["getFillColor"] = _color_to_rgba(sl.color())
+            props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
             props["getPointRadius"] = sl.size() / 2.0
             props["pointRadiusMinPixels"] = 2
             if hasattr(sl, "strokeColor"):
-                props["getLineColor"] = _color_to_rgba(sl.strokeColor())
+                props["getLineColor"] = _color_to_rgba(sl.strokeColor(), sym_opacity)
                 props["lineWidthMinPixels"] = 1
 
         else:
             # Fallback: extract what we can from the symbol itself
-            props["getFillColor"] = _color_to_rgba(symbol.color())
+            props["getFillColor"] = _color_to_rgba(symbol.color(), sym_opacity)
 
     props["opacity"] = layer.opacity()
 
@@ -77,21 +83,23 @@ def _translate_single_symbol(layer, renderer):
 
 def _color_from_symbol(symbol):
     """Extract fill color from any symbol, regardless of symbol layer type."""
+    op = symbol.opacity()
     if symbol.symbolLayerCount() > 0:
         sl = symbol.symbolLayer(0)
-        return _color_to_rgba(sl.color())
-    return _color_to_rgba(symbol.color())
+        return _color_to_rgba(sl.color(), op)
+    return _color_to_rgba(symbol.color(), op)
 
 
 def _line_color_from_symbol(symbol):
     """Extract line/stroke color from a symbol."""
+    op = symbol.opacity()
     if symbol.symbolLayerCount() > 0:
         sl = symbol.symbolLayer(0)
         class_name = type(sl).__name__
         if class_name == "QgsSimpleFillSymbolLayer":
-            return _color_to_rgba(sl.strokeColor())
+            return _color_to_rgba(sl.strokeColor(), op)
         if class_name == "QgsSimpleMarkerSymbolLayer" and hasattr(sl, "strokeColor"):
-            return _color_to_rgba(sl.strokeColor())
+            return _color_to_rgba(sl.strokeColor(), op)
     return None
 
 
