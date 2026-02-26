@@ -259,9 +259,20 @@
           if (config.widthMinPixels !== undefined) layerProps.widthMinPixels = config.widthMinPixels;
           if (config.pointRadiusMinPixels !== undefined) layerProps.pointRadiusMinPixels = config.pointRadiusMinPixels;
 
-          // Gradient fill extension
+          // Extensions
+          var extensions = [];
           if (config.gradient) {
-            layerProps.extensions = [new GradientFillExtension({gradient: config.gradient})];
+            extensions.push(new GradientFillExtension({gradient: config.gradient}));
+          }
+          if (config.markerLine) {
+            extensions.push(new deck.PathStyleExtension({dash: true}));
+            layerProps.getDashArray = config.markerLine.dashArray;
+            layerProps.dashJustified = true;
+            layerProps.capRounded = true;
+            layerProps.jointRounded = true;
+          }
+          if (extensions.length > 0) {
+            layerProps.extensions = extensions;
           }
 
           layers.push(new deck.carto.VectorTileLayer(layerProps));

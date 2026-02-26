@@ -158,12 +158,44 @@ def _extract_sl_props(sl, sym_opacity):
 
     elif class_name == "QgsMarkerLineSymbolLayer":
         # Marker line: renders markers along a line/border.
-        # Extract color as line color (not fill) and render as simple stroke.
+        # Extract marker properties for dash-dot rendering via PathStyleExtension.
+        marker_color = None
+        marker_size = 3.0
+        marker_interval = 10.0
         try:
-            props["getLineColor"] = _color_to_rgba(sl.color(), sym_opacity)
-            props["lineWidthMinPixels"] = 1
+            # Get color and size from the sub-symbol (the actual marker)
+            sub = sl.subSymbol() if hasattr(sl, "subSymbol") else None
+            if sub:
+                marker_color = _color_to_rgba(sub.color(), sym_opacity)
+                for j in range(sub.symbolLayerCount()):
+                    msl = sub.symbolLayer(j)
+                    if hasattr(msl, "size"):
+                        marker_size = msl.size()
+                        break
+                    if hasattr(msl, "color"):
+                        marker_color = _color_to_rgba(msl.color(), sym_opacity)
+            if not marker_color:
+                marker_color = _color_to_rgba(sl.color(), sym_opacity)
+            # Interval between markers
+            if hasattr(sl, "interval"):
+                marker_interval = sl.interval()
         except Exception:
-            pass
+            marker_color = marker_color or [100, 100, 100, 255]
+
+        props["getLineColor"] = marker_color
+        # Use marker size as line width so dashes become visible dots
+        props["getLineWidth"] = max(marker_size, 2.0)
+        props["lineWidthMinPixels"] = max(int(marker_size), 2)
+        # Store marker line config for PathStyleExtension dash rendering
+        # dashArray is [dashSize, gapSize] relative to line width
+        # A very short dash + gap approximates dots
+        gap_ratio = max(marker_interval / max(marker_size, 0.5), 1.0)
+        props["markerLine"] = {
+            "dashArray": [0.5, gap_ratio],
+            "color": marker_color,
+            "width": marker_size,
+        }
+        debug(f"Marker line extracted: size={marker_size}, interval={marker_interval}, gap_ratio={gap_ratio}")
 
     elif class_name in ("QgsSvgMarkerSymbolLayer", "QgsRasterMarkerSymbolLayer",
                          "QgsFontMarkerSymbolLayer"):
