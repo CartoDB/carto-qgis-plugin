@@ -6,6 +6,9 @@ from qgis.core import (
     QgsCategorizedSymbolRenderer,
     QgsGraduatedSymbolRenderer,
     QgsSymbol,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsProject,
 )
 
 from carto.core.layers import (
@@ -91,6 +94,25 @@ def _extract_sl_props(sl, sym_opacity):
         angle = sl.angle() if hasattr(sl, "angle") else 0
         # gradientSpread(): 0=pad, 1=reflect, 2=repeat
         spread = sl.gradientSpread() if hasattr(sl, "gradientSpread") else 0
+        # coordinateMode(): 0=feature, 1=viewport
+        coord_mode = 0
+        if hasattr(sl, "coordinateMode"):
+            coord_mode = sl.coordinateMode()
+
+        # Extract multi-stop color ramp if available
+        color_stops = None
+        if hasattr(sl, "colorRamp"):
+            ramp = sl.colorRamp()
+            if ramp and hasattr(ramp, "stops"):
+                stops = ramp.stops()
+                if stops:
+                    # Build full stops list: color1 at 0, intermediates, color2 at 1
+                    all_stops = [[0.0, _color_to_rgba(ramp.color1(), sym_opacity)]]
+                    for s in stops:
+                        all_stops.append([s.offset, _color_to_rgba(s.color, sym_opacity)])
+                    all_stops.append([1.0, _color_to_rgba(ramp.color2(), sym_opacity)])
+                    color_stops = all_stops
+                    debug(f"Gradient color ramp: {len(all_stops)} stops")
 
         props["gradient"] = {
             "color1": props["getFillColor"],
@@ -100,8 +122,11 @@ def _extract_sl_props(sl, sym_opacity):
             "ref2": ref2,
             "angle": angle,
             "spread": spread,  # 0=pad, 1=reflect, 2=repeat
+            "coordMode": coord_mode,  # 0=feature, 1=viewport
         }
-        debug(f"Gradient fill extracted: type={grad_type}, angle={angle}")
+        if color_stops:
+            props["gradient"]["stops"] = color_stops
+        debug(f"Gradient fill extracted: type={grad_type}, angle={angle}, coordMode={coord_mode}")
 
     elif class_name == "QgsShapeburstFillSymbolLayer":
         # Shapeburst: extract colors, render as simple gradient
@@ -399,5 +424,23 @@ def translate_layer(layer):
         "geometryType": _get_geometry_type(layer),
     }
     config.update(style_props)
+
+    # If gradient uses feature coordinate mode, add layer extent (in EPSG:4326)
+    if "gradient" in config and config["gradient"].get("coordMode", 0) == 0:
+        try:
+            extent = layer.extent()
+            crs = layer.crs()
+            if crs.authid() != "EPSG:4326":
+                transform = QgsCoordinateTransform(
+                    crs, QgsCoordinateReferenceSystem("EPSG:4326"), QgsProject.instance()
+                )
+                extent = transform.transformBoundingBox(extent)
+            config["gradient"]["extent"] = [
+                extent.xMinimum(), extent.yMinimum(),
+                extent.xMaximum(), extent.yMaximum(),
+            ]
+            debug(f"Gradient extent: {config['gradient']['extent']}")
+        except Exception as e:
+            debug(f"Could not get layer extent for gradient: {e}")
 
     return config
