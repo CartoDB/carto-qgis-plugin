@@ -101,14 +101,13 @@
   // Custom deck.gl LayerExtension that renders gradient fills using GLSL shaders.
   // Supports linear, radial, and conical gradients with pad/reflect/repeat spread.
   class GradientFillExtension extends deck.LayerExtension {
-    constructor(opts) {
-      super(opts || {});
-      this.gradientConfig = (opts && opts.gradient) || {};
-    }
+    getShaders(extension) {
+      // Only inject gradient into fill sub-layers, not stroke (PathLayer)
+      if (this.id && this.id.indexOf('stroke') !== -1) {
+        return {};
+      }
 
-    getShaders() {
-      var g = this.gradientConfig;
-      // Normalize colors to 0-1 range for GLSL
+      var g = (extension && extension.opts && extension.opts.gradient) || {};
       var c1 = (g.color1 || [200,200,200,255]).map(function(v) { return (v/255).toFixed(4); });
       var c2 = (g.color2 || [100,100,100,255]).map(function(v) { return (v/255).toFixed(4); });
       var gradType = g.type || 0;
@@ -117,36 +116,30 @@
       var angleDeg = g.angle || 0;
       var spread = g.spread || 0;
 
-      // Compute gradient direction from reference points + angle
       var angleRad = angleDeg * Math.PI / 180.0;
       var dx = ref2[0] - ref1[0];
       var dy = ref2[1] - ref1[1];
-      // Rotate direction by angle
       var cosA = Math.cos(angleRad);
       var sinA = Math.sin(angleRad);
       var rdx = dx * cosA - dy * sinA;
       var rdy = dx * sinA + dy * cosA;
 
-      // Build spread function in GLSL
       var spreadFn;
       if (spread === 1) {
-        // Reflect
         spreadFn = 'st = abs(mod(st + 1.0, 2.0) - 1.0);';
       } else if (spread === 2) {
-        // Repeat
         spreadFn = 'st = fract(st);';
       } else {
-        // Pad (clamp)
         spreadFn = 'st = clamp(st, 0.0, 1.0);';
       }
 
+      // Pass viewport size from vertex shader (where project UBO is available)
+      // to fragment shader via a varying.
       var fsCode;
       if (gradType === 1) {
-        // Radial gradient
         fsCode = '\n' +
           '  vec2 gradCenter = vec2(' + ref1[0].toFixed(4) + ', ' + ref1[1].toFixed(4) + ');\n' +
-          '  vec2 screenUV = gl_FragCoord.xy / vec2(' +
-          '    max(1.0, float(project.viewportSize.x)), max(1.0, float(project.viewportSize.y)));\n' +
+          '  vec2 screenUV = gl_FragCoord.xy / gradViewportSize_v;\n' +
           '  screenUV.y = 1.0 - screenUV.y;\n' +
           '  float st = length(screenUV - gradCenter) * 2.0;\n' +
           '  ' + spreadFn + '\n' +
@@ -154,11 +147,9 @@
           '  vec4 gc2 = vec4(' + c2.join(',') + ');\n' +
           '  color = mix(gc1, gc2, st);\n';
       } else if (gradType === 2) {
-        // Conical gradient
         fsCode = '\n' +
           '  vec2 gradCenter = vec2(' + ref1[0].toFixed(4) + ', ' + ref1[1].toFixed(4) + ');\n' +
-          '  vec2 screenUV = gl_FragCoord.xy / vec2(' +
-          '    max(1.0, float(project.viewportSize.x)), max(1.0, float(project.viewportSize.y)));\n' +
+          '  vec2 screenUV = gl_FragCoord.xy / gradViewportSize_v;\n' +
           '  screenUV.y = 1.0 - screenUV.y;\n' +
           '  float st = atan(screenUV.y - gradCenter.y, screenUV.x - gradCenter.x) / (2.0 * 3.14159) + 0.5;\n' +
           '  st = st + ' + (angleDeg / 360.0).toFixed(4) + ';\n' +
@@ -167,12 +158,10 @@
           '  vec4 gc2 = vec4(' + c2.join(',') + ');\n' +
           '  color = mix(gc1, gc2, st);\n';
       } else {
-        // Linear gradient (default)
         fsCode = '\n' +
           '  vec2 gradDir = vec2(' + rdx.toFixed(6) + ', ' + rdy.toFixed(6) + ');\n' +
           '  vec2 gradOrigin = vec2(' + ref1[0].toFixed(4) + ', ' + ref1[1].toFixed(4) + ');\n' +
-          '  vec2 screenUV = gl_FragCoord.xy / vec2(' +
-          '    max(1.0, float(project.viewportSize.x)), max(1.0, float(project.viewportSize.y)));\n' +
+          '  vec2 screenUV = gl_FragCoord.xy / gradViewportSize_v;\n' +
           '  screenUV.y = 1.0 - screenUV.y;\n' +
           '  float gradLen = max(length(gradDir), 0.001);\n' +
           '  vec2 gradNorm = gradDir / gradLen;\n' +
@@ -185,6 +174,9 @@
 
       return {
         inject: {
+          'vs:#decl': 'out vec2 gradViewportSize_v;\n',
+          'fs:#decl': 'in vec2 gradViewportSize_v;\n',
+          'vs:DECKGL_FILTER_GL_POSITION': '  gradViewportSize_v = project.viewportSize;\n',
           'fs:DECKGL_FILTER_COLOR': fsCode
         }
       };
