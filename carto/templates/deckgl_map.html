@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title}</title>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
+  <script src="https://unpkg.com/@deck.gl/carto@^9.0.0/dist.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #map { width: 100%; height: 100%; }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #555;
+      font-size: 14px;
+    }
+    #error-banner {
+      display: none;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #d32f2f;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      z-index: 1000;
+      max-width: 80%;
+    }
+    .carto-attribution {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      color: #666;
+      background: rgba(255,255,255,0.8);
+      padding: 2px 6px;
+      border-radius: 3px;
+      z-index: 100;
+    }
+    .carto-attribution a { color: #036fe2; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="loading">Loading map...</div>
+  <div id="error-banner"></div>
+  <div class="carto-attribution">
+    Exported from <a href="https://carto.com" target="_blank">CARTO</a> for QGIS
+  </div>
+<script>
+  const API_BASE_URL = '${api_base_url}';
+  const ACCESS_TOKEN = '${access_token}';
+  const LAYER_CONFIGS = ${layers_json};
+  const VIEW_STATE = ${view_state_json};
+  const BASEMAP_STYLE = '${basemap_style}';
+
+  function showError(msg) {
+    var banner = document.getElementById('error-banner');
+    banner.textContent = msg;
+    banner.style.display = 'block';
+  }
+
+  async function initMap() {
+    try {
+      var layers = [];
+
+      for (var i = 0; i < LAYER_CONFIGS.length; i++) {
+        var config = LAYER_CONFIGS[i];
+        try {
+          var source = await deck.carto.vectorTableSource({
+            accessToken: ACCESS_TOKEN,
+            apiBaseUrl: API_BASE_URL,
+            connectionName: config.connection,
+            tableName: config.tableName,
+          });
+
+          var layerProps = {
+            id: config.id,
+            data: source,
+            opacity: config.opacity !== undefined ? config.opacity : 1,
+            pickable: true,
+          };
+
+          if (config.getFillColor) layerProps.getFillColor = config.getFillColor;
+          if (config.getLineColor) layerProps.getLineColor = config.getLineColor;
+          if (config.getColor) layerProps.getColor = config.getColor;
+          if (config.getLineWidth !== undefined) layerProps.getLineWidth = config.getLineWidth;
+          if (config.getWidth !== undefined) layerProps.getWidth = config.getWidth;
+          if (config.getPointRadius !== undefined) layerProps.getPointRadius = config.getPointRadius;
+          if (config.lineWidthMinPixels !== undefined) layerProps.lineWidthMinPixels = config.lineWidthMinPixels;
+          if (config.widthMinPixels !== undefined) layerProps.widthMinPixels = config.widthMinPixels;
+          if (config.pointRadiusMinPixels !== undefined) layerProps.pointRadiusMinPixels = config.pointRadiusMinPixels;
+
+          layers.push(new deck.carto.VectorTileLayer(layerProps));
+        } catch (layerErr) {
+          console.error('Failed to load layer: ' + config.name, layerErr);
+        }
+      }
+
+      document.getElementById('loading').style.display = 'none';
+
+      new deck.DeckGL({
+        container: 'map',
+        mapStyle: BASEMAP_STYLE,
+        initialViewState: VIEW_STATE,
+        controller: true,
+        layers: layers,
+      });
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      showError('Failed to initialize map: ' + err.message);
+      console.error(err);
+    }
+  }
+
+  initMap();
+</script>
+</body>
+</html>

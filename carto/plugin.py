@@ -1,9 +1,9 @@
 import os
 
-from qgis.core import QgsProject, QgsApplication
+from qgis.core import Qgis, QgsProject, QgsApplication
 from qgis.gui import QgsOptionsWidgetFactory
 
-from qgis.PyQt.QtWidgets import QMenu, QAction
+from qgis.PyQt.QtWidgets import QMenu, QAction, QFileDialog
 
 from carto.gui.dataitemprovider import DataItemProvider
 from carto.gui.authorizationsuccessdialog import AuthorizationSuccessDialog
@@ -50,6 +50,12 @@ class CartoPlugin(object):
 
         self.carto_menu.addAction(AUTHORIZATION_MANAGER.login_action)
 
+        self.export_deckgl_action = QAction(
+            "Export to deck.gl HTML...", self.iface.mainWindow()
+        )
+        self.export_deckgl_action.triggered.connect(self.export_deckgl)
+        self.carto_menu.addAction(self.export_deckgl_action)
+
         self.login_action = QAction()
         self.login_action.setIcon(CARTO_ICON)
         self.login_action.triggered.connect(self.login)
@@ -74,6 +80,43 @@ class CartoPlugin(object):
         self.carto_menu.clear()
         self.iface.webMenu().removeAction(self.carto_menu.menuAction())
         self.carto_menu = None
+
+    def export_deckgl(self):
+        from carto.core.export.html_generator import generate_html
+
+        if not CARTO_API.is_logged_in():
+            iface.messageBar().pushMessage(
+                "CARTO",
+                "Please log in to CARTO first",
+                level=Qgis.Warning,
+                duration=5,
+            )
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self.iface.mainWindow(),
+            "Export deck.gl HTML",
+            "",
+            "HTML Files (*.html)",
+        )
+        if not path:
+            return
+
+        success = generate_html(self.iface.mapCanvas(), path)
+        if success:
+            iface.messageBar().pushMessage(
+                "CARTO",
+                f"Map exported to {path}",
+                level=Qgis.Success,
+                duration=5,
+            )
+        else:
+            iface.messageBar().pushMessage(
+                "CARTO",
+                "Export failed. Check the log for details.",
+                level=Qgis.Critical,
+                duration=5,
+            )
 
     def login(self):
         if AUTHORIZATION_MANAGER.is_authorized():
