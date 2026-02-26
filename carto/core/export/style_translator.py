@@ -52,7 +52,12 @@ def _extract_sl_props(sl, sym_opacity):
     props = {}
 
     if class_name == "QgsSimpleFillSymbolLayer":
-        props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
+        # brushStyle(): 0=NoBrush (transparent), 1=SolidPattern, 2+=patterns
+        brush_style = sl.brushStyle() if hasattr(sl, "brushStyle") else 1
+        if brush_style == 0:
+            props["getFillColor"] = [0, 0, 0, 0]  # transparent
+        else:
+            props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
         props["getLineColor"] = _color_to_rgba(sl.strokeColor(), sym_opacity)
         stroke_width = sl.strokeWidth()
         if stroke_width > 0:
@@ -151,6 +156,15 @@ def _extract_sl_props(sl, sym_opacity):
         # Pattern fills: extract color as solid
         props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
 
+    elif class_name == "QgsMarkerLineSymbolLayer":
+        # Marker line: renders markers along a line/border.
+        # Extract color as line color (not fill) and render as simple stroke.
+        try:
+            props["getLineColor"] = _color_to_rgba(sl.color(), sym_opacity)
+            props["lineWidthMinPixels"] = 1
+        except Exception:
+            pass
+
     elif class_name in ("QgsSvgMarkerSymbolLayer", "QgsRasterMarkerSymbolLayer",
                          "QgsFontMarkerSymbolLayer"):
         # Non-simple markers: extract color and size
@@ -194,9 +208,14 @@ def _translate_single_symbol(layer, renderer):
         else:
             props.update(sl_props)
 
-    # If we got nothing from symbol layers, fall back to symbol color
-    if not props:
-        props["getFillColor"] = _color_to_rgba(symbol.color(), sym_opacity)
+    # If no symbol layer set a fill color (e.g. outline-only styles),
+    # use transparent fill for polygons so the basemap shows through
+    if "getFillColor" not in props and "gradient" not in props:
+        geom = _get_geometry_type(layer)
+        if geom == "polygon":
+            props["getFillColor"] = [0, 0, 0, 0]  # transparent
+        elif not props:
+            props["getFillColor"] = _color_to_rgba(symbol.color(), sym_opacity)
 
     props["opacity"] = layer.opacity()
 
