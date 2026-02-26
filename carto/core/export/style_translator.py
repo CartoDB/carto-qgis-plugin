@@ -72,12 +72,50 @@ def _extract_sl_props(sl, sym_opacity):
             props["getLineColor"] = _color_to_rgba(sl.strokeColor(), sym_opacity)
             props["lineWidthMinPixels"] = 1
 
-    elif class_name in ("QgsGradientFillSymbolLayer", "QgsShapeburstFillSymbolLayer"):
-        # Gradient/shapeburst: extract the primary color as solid fill
+    elif class_name == "QgsGradientFillSymbolLayer":
+        # Gradient fill: extract full gradient parameters for shader rendering
         props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
-        # Try to get color2 for a rough approximation (we just use color1)
-        if hasattr(sl, "color2"):
-            debug(f"Gradient fill: using primary color, ignoring color2")
+        color2 = _color_to_rgba(sl.color2(), sym_opacity) if hasattr(sl, "color2") else props["getFillColor"]
+        # gradientType(): 0=linear, 1=radial, 2=conical
+        grad_type = sl.gradientType() if hasattr(sl, "gradientType") else 0
+        # referencePoint1/2: QPointF (0-1 range)
+        ref1 = [0.5, 0.0]
+        ref2 = [0.5, 1.0]
+        if hasattr(sl, "referencePoint1"):
+            p1 = sl.referencePoint1()
+            ref1 = [p1.x(), p1.y()]
+        if hasattr(sl, "referencePoint2"):
+            p2 = sl.referencePoint2()
+            ref2 = [p2.x(), p2.y()]
+        # angle offset
+        angle = sl.angle() if hasattr(sl, "angle") else 0
+        # gradientSpread(): 0=pad, 1=reflect, 2=repeat
+        spread = sl.gradientSpread() if hasattr(sl, "gradientSpread") else 0
+
+        props["gradient"] = {
+            "color1": props["getFillColor"],
+            "color2": color2,
+            "type": grad_type,  # 0=linear, 1=radial, 2=conical
+            "ref1": ref1,
+            "ref2": ref2,
+            "angle": angle,
+            "spread": spread,  # 0=pad, 1=reflect, 2=repeat
+        }
+        debug(f"Gradient fill extracted: type={grad_type}, angle={angle}")
+
+    elif class_name == "QgsShapeburstFillSymbolLayer":
+        # Shapeburst: extract colors, render as simple gradient
+        props["getFillColor"] = _color_to_rgba(sl.color(), sym_opacity)
+        color2 = _color_to_rgba(sl.color2(), sym_opacity) if hasattr(sl, "color2") else props["getFillColor"]
+        props["gradient"] = {
+            "color1": props["getFillColor"],
+            "color2": color2,
+            "type": 1,  # radial approximation
+            "ref1": [0.5, 0.5],
+            "ref2": [1.0, 1.0],
+            "angle": 0,
+            "spread": 0,
+        }
 
     elif class_name in (
         "QgsLinePatternFillSymbolLayer",

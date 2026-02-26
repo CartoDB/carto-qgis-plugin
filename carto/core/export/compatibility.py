@@ -63,9 +63,13 @@ def _check_symbol(symbol):
         if partial:
             # These are handled but with visual degradation
             friendly = sl_type.replace("Qgs", "").replace("SymbolLayer", "")
-            if "Gradient" in sl_type or "Shapeburst" in sl_type:
+            if "GradientFill" in sl_type:
                 warnings.append(
-                    f"{friendly}: gradient will render as solid color"
+                    f"{friendly}: rendered via custom shader (viewport-relative)"
+                )
+            elif "Shapeburst" in sl_type:
+                warnings.append(
+                    f"{friendly}: approximated as radial gradient via shader"
                 )
             elif "Pattern" in sl_type or "SVGFill" in sl_type or "RasterFill" in sl_type:
                 warnings.append(
