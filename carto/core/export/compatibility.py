@@ -27,6 +27,7 @@ PARTIAL_SUPPORT_SYMBOL_LAYERS = {
     "QgsSvgMarkerSymbolLayer",
     "QgsRasterMarkerSymbolLayer",
     "QgsFontMarkerSymbolLayer",
+    "QgsMarkerLineSymbolLayer",
 }
 
 # Non-solid fill styles that we render as solid (with warning)
@@ -70,6 +71,10 @@ def _check_symbol(symbol):
             elif "Shapeburst" in sl_type:
                 warnings.append(
                     f"{friendly}: approximated as radial gradient via shader"
+                )
+            elif "MarkerLine" in sl_type:
+                warnings.append(
+                    f"{friendly}: marker line border will be rendered as simple stroke"
                 )
             elif "Pattern" in sl_type or "SVGFill" in sl_type or "RasterFill" in sl_type:
                 warnings.append(

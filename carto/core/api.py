@@ -26,13 +26,22 @@ class CartoApi(QObject):
     roles = []
     is_self_hosted = False
 
+    _SETTINGS_KEY = "carto/auth_token"
+
     def __init__(self):
         super().__init__()
         self.session = requests.Session()
         set_proxy_values(self.session)
+        # Restore token from QgsSettings if available (survives plugin reload)
+        from qgis.core import QgsSettings
+        saved = QgsSettings().value(self._SETTINGS_KEY, None)
+        if saved:
+            self.token = saved
 
     def set_token(self, token):
         self.token = token
+        from qgis.core import QgsSettings
+        QgsSettings().setValue(self._SETTINGS_KEY, token)
 
     def configure_endpoints(self):
         user = self.user().json()
@@ -53,6 +62,8 @@ class CartoApi(QObject):
         self.roles = []
         self.workspace_url = None
         self.base_url = None
+        from qgis.core import QgsSettings
+        QgsSettings().remove(self._SETTINGS_KEY)
 
     def user(self):
         return self.get(USER_URL)

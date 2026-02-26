@@ -15,6 +15,7 @@ from qgis.utils import iface
 
 from carto.gui.authorization_manager import AUTHORIZATION_MANAGER
 from carto.gui.utils import icon
+from carto.core.enums import AuthState
 
 
 CARTO_ICON = icon("carto.svg")
@@ -66,6 +67,15 @@ class CartoPlugin(object):
 
         QgsProject.instance().layerRemoved.connect(self.tracker.layer_removed)
         QgsProject.instance().layerWasAdded.connect(self.tracker.layer_added)
+
+        # Restore auth session from saved token (survives plugin reload)
+        if CARTO_API.token and not CARTO_API.base_url:
+            try:
+                CARTO_API.configure_endpoints()
+                AUTHORIZATION_MANAGER._set_status(AuthState.Authorized)
+            except Exception:
+                # Token expired or invalid — clear it
+                CARTO_API.clear()
 
     def unload(self):
         QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.dip)

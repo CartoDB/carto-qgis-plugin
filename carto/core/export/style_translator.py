@@ -182,8 +182,17 @@ def _translate_single_symbol(layer, renderer):
     for i in range(symbol.symbolLayerCount()):
         sl = symbol.symbolLayer(i)
         sl_props = _extract_sl_props(sl, sym_opacity)
-        # Merge: later symbol layers override earlier ones
-        props.update(sl_props)
+        # Merge: later symbol layers override earlier ones,
+        # but preserve gradient config if the new layer doesn't provide one
+        if "gradient" in props and "gradient" not in sl_props:
+            saved_gradient = props["gradient"]
+            saved_fill = props.get("getFillColor")
+            props.update(sl_props)
+            props["gradient"] = saved_gradient
+            if saved_fill:
+                props["getFillColor"] = saved_fill
+        else:
+            props.update(sl_props)
 
     # If we got nothing from symbol layers, fall back to symbol color
     if not props:
