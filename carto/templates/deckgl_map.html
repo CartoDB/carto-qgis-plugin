@@ -65,6 +65,38 @@
   const VIEW_STATE = ${view_state_json};
   const BASEMAP_STYLE = '${basemap_style}';
 
+  // Resolve accessor descriptors from Python into JS functions.
+  // Descriptors are objects with a __type field ('categorized' or 'graduated').
+  function resolveAccessor(desc) {
+    if (!desc || typeof desc !== 'object' || !desc.__type) return desc;
+
+    if (desc.__type === 'categorized') {
+      var field = desc.field;
+      var categories = desc.categories;
+      var fallback = desc.default;
+      return function(d) {
+        var val = String(d.properties[field]);
+        if (categories.hasOwnProperty(val)) return categories[val];
+        return fallback;
+      };
+    }
+
+    if (desc.__type === 'graduated') {
+      var field = desc.field;
+      var breaks = desc.breaks;
+      var colors = desc.colors;
+      return function(d) {
+        var val = d.properties[field];
+        for (var i = 0; i < breaks.length; i++) {
+          if (val <= breaks[i]) return colors[i];
+        }
+        return colors[colors.length - 1];
+      };
+    }
+
+    return desc;
+  }
+
   function showError(msg) {
     var banner = document.getElementById('error-banner');
     banner.textContent = msg;
@@ -92,12 +124,14 @@
             pickable: true,
           };
 
-          if (config.getFillColor) layerProps.getFillColor = config.getFillColor;
-          if (config.getLineColor) layerProps.getLineColor = config.getLineColor;
-          if (config.getColor) layerProps.getColor = config.getColor;
-          if (config.getLineWidth !== undefined) layerProps.getLineWidth = config.getLineWidth;
-          if (config.getWidth !== undefined) layerProps.getWidth = config.getWidth;
-          if (config.getPointRadius !== undefined) layerProps.getPointRadius = config.getPointRadius;
+          // Accessor props — resolve descriptors into functions
+          var accessorProps = ['getFillColor', 'getLineColor', 'getColor',
+                               'getLineWidth', 'getWidth', 'getPointRadius'];
+          for (var j = 0; j < accessorProps.length; j++) {
+            var prop = accessorProps[j];
+            if (config[prop] !== undefined) layerProps[prop] = resolveAccessor(config[prop]);
+          }
+          // Static props
           if (config.lineWidthMinPixels !== undefined) layerProps.lineWidthMinPixels = config.lineWidthMinPixels;
           if (config.widthMinPixels !== undefined) layerProps.widthMinPixels = config.widthMinPixels;
           if (config.pointRadiusMinPixels !== undefined) layerProps.pointRadiusMinPixels = config.pointRadiusMinPixels;

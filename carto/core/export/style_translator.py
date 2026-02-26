@@ -3,6 +3,8 @@ import math
 from qgis.core import (
     QgsWkbTypes,
     QgsSingleSymbolRenderer,
+    QgsCategorizedSymbolRenderer,
+    QgsGraduatedSymbolRenderer,
     QgsSymbol,
 )
 
@@ -73,6 +75,175 @@ def _translate_single_symbol(layer, renderer):
     return props
 
 
+def _color_from_symbol(symbol):
+    """Extract fill color from any symbol, regardless of symbol layer type."""
+    if symbol.symbolLayerCount() > 0:
+        sl = symbol.symbolLayer(0)
+        return _color_to_rgba(sl.color())
+    return _color_to_rgba(symbol.color())
+
+
+def _line_color_from_symbol(symbol):
+    """Extract line/stroke color from a symbol."""
+    if symbol.symbolLayerCount() > 0:
+        sl = symbol.symbolLayer(0)
+        class_name = type(sl).__name__
+        if class_name == "QgsSimpleFillSymbolLayer":
+            return _color_to_rgba(sl.strokeColor())
+        if class_name == "QgsSimpleMarkerSymbolLayer" and hasattr(sl, "strokeColor"):
+            return _color_to_rgba(sl.strokeColor())
+    return None
+
+
+def _size_from_symbol(symbol):
+    """Extract point radius or line width from a symbol."""
+    if symbol.symbolLayerCount() > 0:
+        sl = symbol.symbolLayer(0)
+        class_name = type(sl).__name__
+        if class_name == "QgsSimpleMarkerSymbolLayer":
+            return sl.size() / 2.0
+        if class_name == "QgsSimpleLineSymbolLayer":
+            return sl.width()
+    return None
+
+
+def _translate_categorized(layer, renderer):
+    """Translate a QgsCategorizedSymbolRenderer to deck.gl style props.
+
+    Produces accessor descriptors with __type='categorized' that the
+    HTML template resolves into JS accessor functions at runtime.
+    """
+    field = renderer.classAttribute()
+    geom = _get_geometry_type(layer)
+    props = {"opacity": layer.opacity()}
+
+    # Build category -> color mapping
+    fill_categories = {}
+    line_categories = {}
+    size_categories = {}
+    default_fill = [128, 128, 128, 200]
+    default_line = None
+    default_size = None
+
+    for cat in renderer.categories():
+        value = cat.value()
+        symbol = cat.symbol()
+
+        # Skip the "all other values" category (empty/None value)
+        if value == "" or value is None:
+            default_fill = _color_from_symbol(symbol)
+            default_line = _line_color_from_symbol(symbol)
+            default_size = _size_from_symbol(symbol)
+            continue
+
+        # Convert value to string key for JSON serialization
+        key = str(value)
+        fill_categories[key] = _color_from_symbol(symbol)
+
+        lc = _line_color_from_symbol(symbol)
+        if lc:
+            line_categories[key] = lc
+
+        sz = _size_from_symbol(symbol)
+        if sz is not None:
+            size_categories[key] = sz
+
+    # Fill color accessor
+    color_prop = "getColor" if geom == "line" else "getFillColor"
+    props[color_prop] = {
+        "__type": "categorized",
+        "field": field,
+        "categories": fill_categories,
+        "default": default_fill,
+    }
+
+    # Line color accessor (for polygons/points with strokes)
+    if line_categories and geom != "line":
+        props["getLineColor"] = {
+            "__type": "categorized",
+            "field": field,
+            "categories": line_categories,
+            "default": default_line or [100, 100, 100, 255],
+        }
+        props["lineWidthMinPixels"] = 1
+
+    # Size accessor (for points or lines with varying size)
+    if size_categories:
+        size_prop = "getPointRadius" if geom == "point" else "getWidth"
+        props[size_prop] = {
+            "__type": "categorized",
+            "field": field,
+            "categories": size_categories,
+            "default": default_size or 3,
+        }
+        if geom == "point":
+            props["pointRadiusMinPixels"] = 2
+
+    return props
+
+
+def _translate_graduated(layer, renderer):
+    """Translate a QgsGraduatedSymbolRenderer to deck.gl style props.
+
+    Produces accessor descriptors with __type='graduated' that the
+    HTML template resolves into JS accessor functions at runtime.
+    """
+    field = renderer.classAttribute()
+    geom = _get_geometry_type(layer)
+    props = {"opacity": layer.opacity()}
+
+    # Build breaks and colors from ranges
+    breaks = []
+    fill_colors = []
+    line_colors = []
+    sizes = []
+
+    for r in renderer.ranges():
+        breaks.append(r.upperValue())
+        fill_colors.append(_color_from_symbol(r.symbol()))
+
+        lc = _line_color_from_symbol(r.symbol())
+        if lc:
+            line_colors.append(lc)
+
+        sz = _size_from_symbol(r.symbol())
+        if sz is not None:
+            sizes.append(sz)
+
+    # Fill color accessor
+    color_prop = "getColor" if geom == "line" else "getFillColor"
+    props[color_prop] = {
+        "__type": "graduated",
+        "field": field,
+        "breaks": breaks,
+        "colors": fill_colors,
+    }
+
+    # Line color accessor
+    if line_colors and len(line_colors) == len(breaks) and geom != "line":
+        props["getLineColor"] = {
+            "__type": "graduated",
+            "field": field,
+            "breaks": breaks,
+            "colors": line_colors,
+        }
+        props["lineWidthMinPixels"] = 1
+
+    # Size accessor (proportional symbols)
+    if sizes and len(sizes) == len(breaks):
+        size_prop = "getPointRadius" if geom == "point" else "getWidth"
+        props[size_prop] = {
+            "__type": "graduated",
+            "field": field,
+            "breaks": breaks,
+            "colors": sizes,  # reuse "colors" key for sizes
+        }
+        if geom == "point":
+            props["pointRadiusMinPixels"] = 2
+
+    return props
+
+
 def _translate_fallback(layer):
     """Fallback style for unsupported renderer types."""
     geom = _get_geometry_type(layer)
@@ -105,6 +276,10 @@ def translate_layer(layer):
     renderer = layer.renderer()
     if isinstance(renderer, QgsSingleSymbolRenderer):
         style_props = _translate_single_symbol(layer, renderer)
+    elif isinstance(renderer, QgsCategorizedSymbolRenderer):
+        style_props = _translate_categorized(layer, renderer)
+    elif isinstance(renderer, QgsGraduatedSymbolRenderer):
+        style_props = _translate_graduated(layer, renderer)
     else:
         debug(f"Unsupported renderer type: {type(renderer).__name__}, using fallback")
         style_props = _translate_fallback(layer)
