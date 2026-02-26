@@ -9,11 +9,24 @@ from qgis.core import (
 )
 
 
-# Symbol layer types we can translate to deck.gl
-SUPPORTED_SYMBOL_LAYERS = {
+# Symbol layer types with full deck.gl support
+FULL_SUPPORT_SYMBOL_LAYERS = {
     "QgsSimpleFillSymbolLayer",
     "QgsSimpleLineSymbolLayer",
     "QgsSimpleMarkerSymbolLayer",
+}
+
+# Symbol layer types where we can extract color (rendered as solid/circle)
+PARTIAL_SUPPORT_SYMBOL_LAYERS = {
+    "QgsGradientFillSymbolLayer",
+    "QgsShapeburstFillSymbolLayer",
+    "QgsLinePatternFillSymbolLayer",
+    "QgsPointPatternFillSymbolLayer",
+    "QgsSVGFillSymbolLayer",
+    "QgsRasterFillSymbolLayer",
+    "QgsSvgMarkerSymbolLayer",
+    "QgsRasterMarkerSymbolLayer",
+    "QgsFontMarkerSymbolLayer",
 }
 
 # Non-solid fill styles that we render as solid (with warning)
@@ -35,16 +48,36 @@ def _check_symbol(symbol):
     for i in range(count):
         sl = symbol.symbolLayer(i)
         sl_type = type(sl).__name__
-        supported = sl_type in SUPPORTED_SYMBOL_LAYERS
+        full = sl_type in FULL_SUPPORT_SYMBOL_LAYERS
+        partial = sl_type in PARTIAL_SUPPORT_SYMBOL_LAYERS
 
-        detail = {"type": sl_type, "supported": supported}
+        detail = {"type": sl_type, "supported": full or partial}
         sl_details.append(detail)
 
-        if not supported:
-            warnings.append(f"{sl_type} is not supported — will use fallback style")
+        if not full and not partial:
+            warnings.append(
+                f"{sl_type} not supported — color extracted as fallback"
+            )
             continue
 
-        # Check for unsupported sub-properties
+        if partial:
+            # These are handled but with visual degradation
+            friendly = sl_type.replace("Qgs", "").replace("SymbolLayer", "")
+            if "Gradient" in sl_type or "Shapeburst" in sl_type:
+                warnings.append(
+                    f"{friendly}: gradient will render as solid color"
+                )
+            elif "Pattern" in sl_type or "SVGFill" in sl_type or "RasterFill" in sl_type:
+                warnings.append(
+                    f"{friendly}: pattern will render as solid color"
+                )
+            elif "Marker" in sl_type:
+                warnings.append(
+                    f"{friendly}: will render as circle with extracted color"
+                )
+            continue
+
+        # Check sub-properties of fully supported types
         if sl_type == "QgsSimpleFillSymbolLayer":
             style = sl.brushStyle()
             # Qt.SolidPattern = 1
