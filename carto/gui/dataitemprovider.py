@@ -1,4 +1,4 @@
-import sip
+from qgis.PyQt import sip
 from json2html import json2html
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDialog
@@ -210,8 +210,8 @@ class SchemaItem(QgsDataCollectionItem):
             self.schema,
             iface.mainWindow(),
         )
-        ret = dialog.exec_()
-        if ret == QDialog.Accepted:
+        ret = dialog.exec()
+        if ret == QDialog.DialogCode.Accepted:
             dialog.schema.import_table(
                 dialog.file_or_layer,
                 dialog.tablename,
@@ -268,8 +268,8 @@ class TableItem(QgsDataItem):
             self.table, self.table.schema.database.connection
         )
         dlg.show()
-        ret = dlg.exec_()
-        if ret == QDialog.Accepted:
+        ret = dlg.exec()
+        if ret == QDialog.DialogCode.Accepted:
             self._add_layer(dlg.where, dlg.limit)
 
     def add_layer(self):
@@ -284,7 +284,7 @@ class TableItem(QgsDataItem):
         def _show_terminated_message():
             iface.messageBar().pushMessage(
                 f"Layer download failed or was canceled ({self.table.name})",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=5,
             )
 
@@ -298,7 +298,7 @@ class TableItem(QgsDataItem):
         iface.messageBar().pushMessage(
             "",
             "Download task added to QGIS task manager",
-            level=Qgis.Info,
+            level=Qgis.MessageLevel.Info,
             duration=5,
         )
 
@@ -307,7 +307,7 @@ class TableItem(QgsDataItem):
         if layer is None:
             iface.messageBar().pushMessage(
                 "The query didn't yield any data to download",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=10,
             )
             return
@@ -318,7 +318,7 @@ class TableItem(QgsDataItem):
             iface.messageBar().pushMessage(
                 "Read-only",
                 "No permission to write. Local changes will not be saved to the original table",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=10,
             )
             return

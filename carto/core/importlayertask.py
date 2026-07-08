@@ -12,7 +12,7 @@ from carto.core.utils import (
 )
 from carto.core.api import CARTO_API
 
-from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QMetaType
 
 
 class ImportLayerTask(QgsTask):
@@ -66,7 +66,7 @@ class ImportLayerTask(QgsTask):
                         field_values.append("NULL")
                     elif field.isNumeric():
                         field_values.append(str(value))
-                    elif field.type() == QVariant.Bool:
+                    elif field.type() == QMetaType.Type.Bool:
                         field_values.append("TRUE" if value else "FALSE")
                     else:
                         field_values.append(f"'{value}'")

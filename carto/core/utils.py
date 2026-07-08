@@ -3,7 +3,7 @@ import requests
 import shutil
 from carto.gui.utils import waitcursor
 
-from qgis.PyQt.QtCore import QSettings, QVariant
+from qgis.PyQt.QtCore import QSettings, QMetaType
 from qgis.core import (
     NULL,
     QgsMessageLog,
@@ -108,44 +108,44 @@ def provider_data_type_from_qgis_type(qgis_type, provider):
 
     type_mapping = {
         "bigquery": {
-            QVariant.String: "STRING",
+            QMetaType.Type.QString: "STRING",
             "text": "STRING",
-            QVariant.Int: "INT64",
-            QVariant.LongLong: "INT64",
-            QVariant.Double: "FLOAT64",
-            QVariant.Bool: "BOOL",
+            QMetaType.Type.Int: "INT64",
+            QMetaType.Type.LongLong: "INT64",
+            QMetaType.Type.Double: "FLOAT64",
+            QMetaType.Type.Bool: "BOOL",
             "geometry": "GEOGRAPHY",
         },
         "snowflake": {
-            QVariant.String: "VARCHAR",
-            QVariant.Int: "NUMBER(38,0)",
-            QVariant.LongLong: "NUMBER(38,0)",
-            QVariant.Double: "FLOAT",
-            QVariant.Bool: "BOOL",
+            QMetaType.Type.QString: "VARCHAR",
+            QMetaType.Type.Int: "NUMBER(38,0)",
+            QMetaType.Type.LongLong: "NUMBER(38,0)",
+            QMetaType.Type.Double: "FLOAT",
+            QMetaType.Type.Bool: "BOOL",
             "geometry": "GEOGRAPHY",
         },
         "redshift": {
-            QVariant.String: "VARCHAR(MAX)",
-            QVariant.Int: "BIGINT",
-            QVariant.LongLong: "BIGINT",
-            QVariant.Double: "DOUBLE PRECISION",
-            QVariant.Bool: "BOOLEAN",
+            QMetaType.Type.QString: "VARCHAR(MAX)",
+            QMetaType.Type.Int: "BIGINT",
+            QMetaType.Type.LongLong: "BIGINT",
+            QMetaType.Type.Double: "DOUBLE PRECISION",
+            QMetaType.Type.Bool: "BOOLEAN",
             "geometry": "GEOMETRY",
         },
         "postgres": {
-            QVariant.String: "TEXT",
-            QVariant.Int: "INTEGER",
-            QVariant.LongLong: "BIGINT",
-            QVariant.Double: "DOUBLE PRECISION",
-            QVariant.Bool: "BOOLEAN",
+            QMetaType.Type.QString: "TEXT",
+            QMetaType.Type.Int: "INTEGER",
+            QMetaType.Type.LongLong: "BIGINT",
+            QMetaType.Type.Double: "DOUBLE PRECISION",
+            QMetaType.Type.Bool: "BOOLEAN",
             "geometry": "GEOMETRY",
         },
         "databricksRest": {
-            QVariant.String: "VARCHAR",
-            QVariant.Int: "BIGINT",
-            QVariant.LongLong: "BIGINT",
-            QVariant.Double: "DOUBLE",
-            QVariant.Bool: "BOOLEAN",
+            QMetaType.Type.QString: "VARCHAR",
+            QMetaType.Type.Int: "BIGINT",
+            QMetaType.Type.LongLong: "BIGINT",
+            QMetaType.Type.Double: "DOUBLE",
+            QMetaType.Type.Bool: "BOOLEAN",
             "geometry": "STRING",
         },
     }
@@ -207,7 +207,7 @@ def set_proxy_values(session):
         if proxyType != "HttpProxy":
             QgsMessageLog.logMessage(
                 "Carto: Only HttpProxy is supported " "for connecting to the Carto API",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
             )
             return
 
@@ -236,8 +236,8 @@ def set_proxy_values(session):
         session.proxies = {}
 
 
-def log(message, level=Qgis.Info):
-    if level == Qgis.Info:
+def log(message, level=Qgis.MessageLevel.Info):
+    if level == Qgis.MessageLevel.Info:
         QgsMessageLog.logMessage(message, "CARTO", level)
     else:
         if setting(ENABLE_LOG):

@@ -4,7 +4,7 @@ A QGIS plugin to access, visualize, and edit geospatial data in cloud data wareh
 
 ## Tech stack
 
-- Python 3.7+
+- Python 3.12+
 - QGIS API (`qgis.core`, `qgis.gui`)
 - Qt via `qgis.PyQt` (not direct PyQt5/PyQt6 imports)
 
@@ -26,6 +26,6 @@ python helper.py package   # build carto.zip for distribution
 
 ## Code formatting
 
-- Black (default settings, Python 3.7+ target)
+- Black (default settings, Python 3.12+ target)
 - isort with `profile = black`
 - flake8 with `max-line-length = 99`

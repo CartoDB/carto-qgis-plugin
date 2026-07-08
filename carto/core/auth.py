@@ -61,7 +61,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
 
                 network_request = QNetworkRequest(QUrl(TOKEN_URL))
                 network_request.setHeader(
-                    QNetworkRequest.ContentTypeHeader,
+                    QNetworkRequest.KnownHeaders.ContentTypeHeader,
                     "application/x-www-form-urlencoded",
                 )
 

@@ -44,7 +44,7 @@ class AuthorizeDialog(BASE, WIDGET):
 
     def login_sso(self):
         dlg = SSODialog(self)
-        if dlg.exec_():
+        if dlg.exec():
             name = dlg.sso_org
             session = requests.Session()
             set_proxy_values(session)
@@ -59,7 +59,7 @@ class AuthorizeDialog(BASE, WIDGET):
                 else:
                     log(
                         f"Invalid organization name: {name}. Response: {response.text}",
-                        Qgis.Critical,
+                        Qgis.MessageLevel.Critical,
                     )
                     QMessageBox.warning(
                         self, "Invalid organization", "Invalid organization name"
@@ -74,7 +74,7 @@ class AuthorizeDialog(BASE, WIDGET):
                 stacktrace = traceback.format_exc()
                 log(
                     f"Error resolving organization name: {stacktrace}",
-                    Qgis.Critical,
+                    Qgis.MessageLevel.Critical,
                 )
                 QMessageBox.warning(
                     self,

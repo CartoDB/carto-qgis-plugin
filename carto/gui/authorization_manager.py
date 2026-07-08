@@ -115,7 +115,7 @@ class AuthorizationManager(QObject):
         process
         """
         dlg = AuthorizeDialog(iface.mainWindow())
-        if dlg.exec_():
+        if dlg.exec():
             self.start_authorization_workflow(dlg.sso_org)
         else:
             self.queued_callbacks = []
@@ -151,7 +151,7 @@ class AuthorizationManager(QObject):
         button.setText("Cancel")
         button.pressed.connect(button_clicked)
         self._authorizing_message.layout().addWidget(button)
-        iface.messageBar().pushWidget(self._authorizing_message, Qgis.Info)
+        iface.messageBar().pushWidget(self._authorizing_message, Qgis.MessageLevel.Info)
 
         self._workflow.start()
         return False
@@ -210,7 +210,7 @@ class AuthorizationManager(QObject):
         self.authorized.emit()
 
         dlg = AuthorizationSuccessDialog(iface.mainWindow())
-        dlg.exec_()
+        dlg.exec()
         if dlg.logout:
             self.deauthorize()
 

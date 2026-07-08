@@ -29,7 +29,6 @@ class CartoOptionsPage(QgsOptionsPageWidget):
         self.config_widget = ConfigDialog()
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setMargin(0)
         self.setLayout(layout)
         layout.addWidget(self.config_widget)
         self.setObjectName("cartoOptions")
