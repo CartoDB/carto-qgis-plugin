@@ -1,6 +1,6 @@
 # CARTO QGIS Plugin
 
-A [QGIS](https://qgis.org) plugin plugin to access, visualize, and edit geospatial data in your data warehouse via [CARTO](https://carto.com).
+A [QGIS](https://qgis.org) plugin to access, visualize, and edit geospatial data in your data warehouse via [CARTO](https://carto.com).
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)](./LICENSE.md)
 
@@ -8,7 +8,7 @@ A [QGIS](https://qgis.org) plugin plugin to access, visualize, and edit geospati
 
 The CARTO plugin is available in the [QGIS Plugins Repository](https://plugins.qgis.org/plugins/carto/). To install the latest version, use the QGIS Plugin Manager and search for the CARTO QGIS plugin.
 
-This plugin is compatible with QGIS v3.16 or later.
+This plugin is compatible with QGIS v4.0 or later. For QGIS 3.x, use [v0.92.4](https://github.com/cartodb/carto-qgis-plugin/releases/tag/v0.92.4).
 
 ## Contributing
 

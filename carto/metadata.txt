@@ -1,6 +1,6 @@
 [general]
 name=CARTO
-qgisMinimumVersion=3.16
+qgisMinimumVersion=4.0
 description=Seamless Cloud Data Warehouse Integration
 about=The CARTO QGIS Plugin allows you to access, visualize, and edit spatial data from leading cloud data warehouses directly within QGIS. With this plugin, you can seamlessly check out data from Google BigQuery, Snowflake, Databricks, AWS Redshift, and PostgreSQL, edit it within QGIS, and commit changes back to your data warehouse—all powered by the CARTO platform.
 

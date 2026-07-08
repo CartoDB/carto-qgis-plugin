@@ -19,7 +19,7 @@ class ImportDialog(BASE, WIDGET):
         self.setupUi(self)
 
         self.bar = QgsMessageBar()
-        self.bar.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.bar.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.layout().addWidget(self.bar)
 
         self.buttonBox.accepted.connect(self.okClicked)
@@ -69,7 +69,7 @@ class ImportDialog(BASE, WIDGET):
         else:
             self.file_or_layer = self.txtFile.filePath()
         if not self.file_or_layer:
-            self.bar.pushMessage("File or layer is required", Qgis.Warning, duration=5)
+            self.bar.pushMessage("File or layer is required", Qgis.MessageLevel.Warning, duration=5)
             return
         self.tablename = self.txtTablename.text()
         if not self.tablename:

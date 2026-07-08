@@ -76,18 +76,19 @@ def package(version=None):
 
 def install():
     src = os.path.join(os.path.dirname(__file__), "carto")
+    qgis_version = "QGIS4" if "--qgis4" in sys.argv else "QGIS3"
     if os.name == "nt":
         default_profile_plugins = (
-            "~/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins"
+            f"~/AppData/Roaming/QGIS/{qgis_version}/profiles/default/python/plugins"
         )
     elif sys.platform == "darwin":
         default_profile_plugins = (
-            "~/Library/Application Support/QGIS/QGIS3"
+            f"~/Library/Application Support/QGIS/{qgis_version}"
             "/profiles/default/python/plugins"
         )
     else:
         default_profile_plugins = (
-            "~/.local/share/QGIS/QGIS3/profiles/default/python/plugins"
+            f"~/.local/share/QGIS/{qgis_version}/profiles/default/python/plugins"
         )
 
     dst_plugins = os.path.expanduser(default_profile_plugins)
@@ -127,14 +128,14 @@ def usage():
         (
             "Usage:\n"
             f"  {sys.argv[0]} package [VERSION]    Build a QGIS plugin zip file\n"
-            f"  {sys.argv[0]} install              Install in your local QGIS (for development)\n"
+            f"  {sys.argv[0]} install [--qgis4]    Install in your local QGIS (for development)\n"
         ),
         file=sys.stderr,
     )
     sys.exit(2)
 
 
-if len(sys.argv) == 2 and sys.argv[1] == "install":
+if len(sys.argv) >= 2 and sys.argv[1] == "install":
     install()
 elif len(sys.argv) in [2, 3] and sys.argv[1] == "package":
     package(*sys.argv[2:])

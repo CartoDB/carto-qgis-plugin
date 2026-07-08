@@ -34,7 +34,7 @@ class DownloadFilteredLayerDialog(BASE, WIDGET):
         self.limit = None
         self.connection = connection
         self.bar = QgsMessageBar()
-        self.bar.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.bar.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.layout().addWidget(self.bar)
 
         self.buttonBox.accepted.connect(self.okClicked)
@@ -48,7 +48,7 @@ class DownloadFilteredLayerDialog(BASE, WIDGET):
         if self.grpSpatialFilter.isChecked():
             extent = self.extentPanel.getExtent()
             if extent is None:
-                self.bar.pushMessage("Invalid extent value", Qgis.Warning, duration=5)
+                self.bar.pushMessage("Invalid extent value", Qgis.MessageLevel.Warning, duration=5)
                 return
             destination_crs = QgsCoordinateReferenceSystem("EPSG:4326")
             transform = QgsCoordinateTransform(
@@ -90,7 +90,7 @@ class DownloadFilteredLayerDialog(BASE, WIDGET):
         elif self.grpWhereFilter.isChecked():
             statements.append(self.txtWhere.text())
         elif not self.grpLimit.isChecked():
-            self.bar.pushMessage("Please select a filter", Qgis.Warning, duration=5)
+            self.bar.pushMessage("Please select a filter", Qgis.MessageLevel.Warning, duration=5)
             return
         else:
             statements.append("TRUE")
@@ -99,13 +99,13 @@ class DownloadFilteredLayerDialog(BASE, WIDGET):
             limit = self.txtLimit.text()
             if not limit:
                 self.bar.pushMessage(
-                    "Maximum number of rows is required", Qgis.Warning, duration=5
+                    "Maximum number of rows is required", Qgis.MessageLevel.Warning, duration=5
                 )
                 return
             try:
                 self.limit = int(limit)
             except ValueError:
-                self.bar.pushMessage("Invalid number of rows", Qgis.Warning, duration=5)
+                self.bar.pushMessage("Invalid number of rows", Qgis.MessageLevel.Warning, duration=5)
                 return
         else:
             self.limit = MAX_ROWS

@@ -12,11 +12,11 @@ To install the latest version from this repository, follow these steps:
 $ git clone https://github.com/cartodb/carto-qgis-plugin.git
 ```
 
--   Create a link between the repository folder and the QGIS 3 plugins folder.
+-   Create a link between the repository folder and the QGIS 4 plugins folder.
 
 ```console
 $ cd carto-qgis-plugin
-$ python helper.py install
+$ python helper.py install --qgis4
 ```
 
 -   Start QGIS and you will find the plugin in the plugins menu. If it's not available yet, activate
@@ -39,6 +39,6 @@ We use [Black](https://github.com/psf/black) to ensure consistent code formattin
 -   Sublime Text: install [sublack](https://packagecontrol.io/packages/sublack) via Package Control
 -   VSCode [instructions](https://code.visualstudio.com/docs/python/editing#_formatting)
 
-We use the default settings, and target python 3.7+.
+We use the default settings, and target python 3.12+.
 
 One easy solution is to install [pre-commit](https://pre-commit.com), run `pre-commit install --install-hooks` and it'll automatically validate your changes code as a git pre-commit hook.
