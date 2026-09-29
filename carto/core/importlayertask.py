@@ -47,7 +47,7 @@ class ImportLayerTask(QgsTask):
 
             sql_create += ",\n".join(field_definitions) + "\n);"
             sql_create = f"""
-                DROP TABLE IF EXISTS {self.fqn};
+                DROP TABLE IF EXISTS {fqn};
                 {sql_create}
                 """
             sql_create = prepare_multipart_sql([sql_create], self.provider_type, fqn)
