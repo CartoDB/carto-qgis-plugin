@@ -12,7 +12,7 @@ To install the latest version from this repository, follow these steps:
 $ git clone https://github.com/cartodb/carto-qgis-plugin.git
 ```
 
--   Create a link between the repository folder and the QGIS 4 plugins folder.
+-   Create a link between the repository folder and the QGIS plugins folder. Use `--qgis4` for QGIS 4, or omit it for QGIS 3.
 
 ```console
 $ cd carto-qgis-plugin
