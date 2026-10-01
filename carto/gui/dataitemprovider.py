@@ -50,7 +50,7 @@ class DataItemProvider(QgsDataItemProvider):
         return "CartoProvider"
 
     def capabilities(self):
-        return QgsDataProvider.Net
+        return QgsDataProvider.DataCapability.Net
 
     def createDataItem(self, path, parentItem):
         root = RootCollection()
@@ -84,7 +84,7 @@ class BasemapsCollection(QgsDataCollectionItem):
 class BasemapItem(QgsDataItem):
     def __init__(self, parent, name, url, style):
         QgsDataItem.__init__(
-            self, QgsDataItem.Custom, parent, name, "Carto/basemaps/" + name
+            self, QgsDataItem.Type.Custom, parent, name, "Carto/basemaps/" + name
         )
         self.setIcon(basemapIcon)
         self.url = url
@@ -225,7 +225,7 @@ MAX_TABLE_SIZE = 50
 class TableItem(QgsDataItem):
     def __init__(self, parent, table):
         QgsDataItem.__init__(
-            self, QgsDataItem.Custom, parent, table.name, "/Carto/table/" + table.name
+            self, QgsDataItem.Type.Custom, parent, table.name, "/Carto/table/" + table.name
         )
         self.table = table
         self.tasks = []
@@ -260,7 +260,7 @@ class TableItem(QgsDataItem):
         html = json2html.convert(json=metadata)
         dlg = QgsMessageOutput.createMessageOutput()
         dlg.setTitle("Table info")
-        dlg.setMessage(html, QgsMessageOutput.MessageHtml)
+        dlg.setMessage(html, QgsMessageOutput.MessageType.MessageHtml)
         dlg.showMessage()
 
     def add_layer_filtered(self):

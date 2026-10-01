@@ -23,7 +23,7 @@ class ImportLayerTask(QgsTask):
         fqn,
         layer,
     ):
-        super().__init__(f"Importing layer to {fqn}", QgsTask.CanCancel)
+        super().__init__(f"Importing layer to {fqn}", QgsTask.Flag.CanCancel)
         self.exception = None
         self.fqn = fqn
         self.layer = layer

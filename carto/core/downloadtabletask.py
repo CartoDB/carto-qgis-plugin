@@ -41,7 +41,7 @@ from qgis.PyQt.QtCore import QMetaType
 
 class DownloadTableTask(QgsTask):
     def __init__(self, table, where, limit):
-        super().__init__(f"Download table {table.name}", QgsTask.CanCancel)
+        super().__init__(f"Download table {table.name}", QgsTask.Flag.CanCancel)
         self.exception = None
         self.table = table
         self.where = where
@@ -246,7 +246,7 @@ class DownloadTableTask(QgsTask):
             os.makedirs(os.path.dirname(geopackage_file), exist_ok=True)
 
             options = QgsVectorFileWriter.SaveVectorOptions()
-            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+            options.actionOnExistingFile = QgsVectorFileWriter.ActionOnExistingFile.CreateOrOverwriteFile
             options.layerName = layer.name()
             _writer = QgsVectorFileWriter.writeAsVectorFormatV3(
                 layer,

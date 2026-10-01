@@ -68,7 +68,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 result_code = request.post(
                     network_request, data=token_body, forceRefresh=True
                 )
-                if result_code != QgsBlockingNetworkRequest.NoError:
+                if result_code != QgsBlockingNetworkRequest.ErrorCode.NoError:
                     self.server.error = (
                         request.reply().content().data().decode()
                         or request.reply().errorString()
