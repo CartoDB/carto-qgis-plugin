@@ -217,13 +217,13 @@ class Schema:
         def _show_terminated_message():
             iface.messageBar().pushMessage(
                 f"Importing to {fqn} failed or was canceled",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=5,
             )
 
         def _show_completed_message():
             iface.messageBar().pushMessage(
-                f"Layer correctly imported to {fqn}", level=Qgis.Success, duration=5
+                f"Layer correctly imported to {fqn}", level=Qgis.MessageLevel.Success, duration=5
             )
             self.clear_tables_cache()
 
@@ -237,7 +237,7 @@ class Schema:
         iface.messageBar().pushMessage(
             "",
             "Import task added to QGIS task manager",
-            level=Qgis.Info,
+            level=Qgis.MessageLevel.Info,
             duration=5,
         )
 

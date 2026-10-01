@@ -124,7 +124,7 @@ class LayerTracker:
         if not can_write(layer):
             iface.messageBar().pushMessage(
                 "No permission to write. Local changes will not be saved to the original table",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=5,
             )
             return
@@ -138,7 +138,7 @@ class LayerTracker:
         if metadata["schema_changed"]:
             iface.messageBar().pushMessage(
                 "Table schema has changed: changes will not be uploaded upstream",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
                 duration=5,
             )
             return
@@ -150,8 +150,8 @@ class LayerTracker:
         if not pk_field:
             dialog = SelectPrimaryKeyDialog(original_columns)
             try:
-                QApplication.setOverrideCursor(Qt.ArrowCursor)
-                dialog.exec_()
+                QApplication.setOverrideCursor(Qt.CursorShape.ArrowCursor)
+                dialog.exec()
             finally:
                 QApplication.restoreOverrideCursor()
             if dialog.pk:
@@ -161,7 +161,7 @@ class LayerTracker:
             else:
                 iface.messageBar().pushMessage(
                     "Layer has no Primary Key: changes will not be uploaded upstream",
-                    level=Qgis.Warning,
+                    level=Qgis.MessageLevel.Warning,
                     duration=5,
                 )
                 return
@@ -251,12 +251,12 @@ class LayerTracker:
             for statement in sql:
                 CARTO_API.execute_query(connection, statement)
             iface.messageBar().pushMessage(
-                "Layer changes uploaded", level=Qgis.Success, duration=5
+                "Layer changes uploaded", level=Qgis.MessageLevel.Success, duration=5
             )
         except Exception as e:
             iface.messageBar().pushMessage(
                 "Error uploading changes: changes could not be made in the upstream table",
-                level=Qgis.Critical,
+                level=Qgis.MessageLevel.Critical,
                 duration=5,
             )
             error("Error uploading changes: " + str(e))

@@ -12,7 +12,7 @@ from carto.core.utils import (
 )
 from carto.core.api import CARTO_API
 
-from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QMetaType
 
 
 class ImportLayerTask(QgsTask):
@@ -47,7 +47,7 @@ class ImportLayerTask(QgsTask):
 
             sql_create += ",\n".join(field_definitions) + "\n);"
             sql_create = f"""
-                DROP TABLE IF EXISTS {self.fqn};
+                DROP TABLE IF EXISTS {fqn};
                 {sql_create}
                 """
             sql_create = prepare_multipart_sql([sql_create], self.provider_type, fqn)
@@ -66,7 +66,7 @@ class ImportLayerTask(QgsTask):
                         field_values.append("NULL")
                     elif field.isNumeric():
                         field_values.append(str(value))
-                    elif field.type() == QVariant.Bool:
+                    elif field.type() == QMetaType.Type.Bool:
                         field_values.append("TRUE" if value else "FALSE")
                     else:
                         field_values.append(f"'{value}'")

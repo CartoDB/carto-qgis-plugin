@@ -9,7 +9,7 @@ from qgis.core import Qgis, QgsMessageLog
 def waitcursor(method):
     def func(*args, **kw):
         try:
-            QApplication.setOverrideCursor(Qt.WaitCursor)
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             return method(*args, **kw)
         except Exception as ex:
             raise ex

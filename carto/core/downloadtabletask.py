@@ -36,7 +36,7 @@ from qgis.core import (
 )
 
 
-from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QMetaType
 
 
 class DownloadTableTask(QgsTask):
@@ -112,11 +112,11 @@ class DownloadTableTask(QgsTask):
                         field_name = field["name"]
                         field_type = field["type"]
                         if field_type == "string":
-                            fields.append(QgsField(field_name, QVariant.String))
+                            fields.append(QgsField(field_name, QMetaType.Type.QString))
                         elif field_type in ["integer", "int", "bigint"]:
-                            fields.append(QgsField(field_name, QVariant.Int))
+                            fields.append(QgsField(field_name, QMetaType.Type.Int))
                         elif field_type in ["double", "number", "float"]:
-                            fields.append(QgsField(field_name, QVariant.Double))
+                            fields.append(QgsField(field_name, QMetaType.Type.Double))
                         elif field_type == "geometry":
                             geom_field = field_name
                     provider_type = self.table.schema.database.connection.provider_type

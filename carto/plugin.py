@@ -80,7 +80,7 @@ class CartoPlugin(object):
             try:
                 CARTO_API.user()
                 dlg = AuthorizationSuccessDialog(iface.mainWindow())
-                dlg.exec_()
+                dlg.exec()
                 if dlg.logout:
                     AUTHORIZATION_MANAGER.deauthorize()
             except:

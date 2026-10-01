@@ -163,5 +163,9 @@ cython_debug/
 carto.zip
 carto/.DS_Store
 carto/gui/.DS_Store
+.DS_Store
 
 *.zip
+
+# AI tool local settings
+.claude/settings.local.json
