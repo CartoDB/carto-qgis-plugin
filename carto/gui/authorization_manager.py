@@ -125,7 +125,8 @@ class AuthorizationManager(QObject):
         Start an authorization process
         """
 
-        assert not self._workflow
+        if self._workflow:
+            raise RuntimeError("An authorization workflow is already running")
 
         self._cleanup_messages()
 

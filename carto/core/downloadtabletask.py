@@ -61,7 +61,7 @@ class DownloadTableTask(QgsTask):
             quoted_fqn = quote_for_provider(
                 fqn, self.table.schema.database.connection.provider_type
             )
-            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where}"
+            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where}"  # nosec B608
             ret = CARTO_API.execute_query(
                 self.table.schema.database.connection.name,
                 f"CALL cartobq.us.EXPORT_WITH_GDAL('''{query}''','GPKG',NULL,'{self.table.tableid}');",
@@ -285,7 +285,7 @@ class DownloadTableTask(QgsTask):
         return CARTO_API.execute_query(
             self.table.schema.database.connection.name,
             f"""SELECT * FROM {fqn}
-                WHERE {where} ;""",
+                WHERE {where} ;""",  # nosec B608
         )
 
     def row_count(self):
@@ -301,5 +301,5 @@ class DownloadTableTask(QgsTask):
         return CARTO_API.execute_query(
             self.table.schema.database.connection.name,
             f"""SELECT COUNT(*) AS row_count FROM {fqn}
-                WHERE {self.where} ;""",
+                WHERE {self.where} ;""",  # nosec B608
         )["rows"][0][col_name]

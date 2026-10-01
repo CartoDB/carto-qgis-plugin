@@ -36,7 +36,7 @@ def setting(name):
 
 @waitcursor
 def download_file(url, filename):
-    with requests.get(url, stream=True) as r:
+    with requests.get(url, stream=True, timeout=60) as r:
         with open(filename, "wb") as f:
             shutil.copyfileobj(r.raw, f)
 
