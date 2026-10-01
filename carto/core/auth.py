@@ -36,7 +36,7 @@ SCOPE = " ".join(
     ]
 )
 
-TOKEN_URL = "https://auth.carto.com/oauth/token"
+OAUTH_EXCHANGE_URL = "https://auth.carto.com/oauth/token"
 
 
 class CallbackHandler(BaseHTTPRequestHandler):
@@ -59,7 +59,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 request = QgsBlockingNetworkRequest()
                 token_body = urlparse.urlencode(body).encode()
 
-                network_request = QNetworkRequest(QUrl(TOKEN_URL))
+                network_request = QNetworkRequest(QUrl(OAUTH_EXCHANGE_URL))
                 network_request.setHeader(
                     QNetworkRequest.KnownHeaders.ContentTypeHeader,
                     "application/x-www-form-urlencoded",
