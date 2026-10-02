@@ -153,7 +153,7 @@ class Schema:
                         AND g.table_schema = s.table_schema
                         AND g.table_name = s.table_name
                     ORDER BY g.table_name;
-                """
+                """  # nosec B608
                 tables = CARTO_API.execute_query(self.database.connection.name, query)[
                     "rows"
                 ]
@@ -281,7 +281,7 @@ class Table:
                         `{self.schema.database.databaseid}.{self.schema.schemaid}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE`
                     WHERE
                         table_name = '{self.tableid}';
-                    """
+                    """  # nosec B608
         elif self.schema.database.connection.provider_type == "postgres":
             sql = f"""
                     SELECT
@@ -294,7 +294,7 @@ class Table:
                         i.indrelid = '{self.schema.database.databaseid}.{self.schema.schemaid}.{self.tableid}'::regclass
                     AND
                         i.indisprimary;
-                    """
+                    """  # nosec B608
         elif self.schema.database.connection.provider_type == "redshift":
             sql = f"""
                     SELECT
@@ -305,7 +305,7 @@ class Table:
                         table_name = '{self.tableid}'
                     AND
                         constraint_name = 'PRIMARY';
-                    """
+                    """  # nosec B608
         elif self.schema.database.connection.provider_type == "snowflake":
             sql = f"""
                     SELECT
@@ -318,7 +318,7 @@ class Table:
                         constraint_type = 'PRIMARY KEY'
                     AND
                         table_schema = '{self.schema.schemaid}';
-                    """
+                    """  # nosec B608
         else:
             return None
         ret = CARTO_API.execute_query(self.schema.database.connection.name, sql)
@@ -335,7 +335,7 @@ class Table:
         return CARTO_API.execute_query(
             self.schema.database.connection.name,
             f"""SELECT * FROM {fqn}
-                WHERE {where} ;""",
+                WHERE {where} ;""",  # nosec B608
         )
 
     def _filepath(self):

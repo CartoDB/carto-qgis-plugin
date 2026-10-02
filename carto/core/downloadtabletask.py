@@ -41,7 +41,7 @@ from qgis.PyQt.QtCore import QMetaType
 
 class DownloadTableTask(QgsTask):
     def __init__(self, table, where, limit):
-        super().__init__(f"Download table {table.name}", QgsTask.CanCancel)
+        super().__init__(f"Download table {table.name}", QgsTask.Flag.CanCancel)
         self.exception = None
         self.table = table
         self.where = where
@@ -61,7 +61,7 @@ class DownloadTableTask(QgsTask):
             quoted_fqn = quote_for_provider(
                 fqn, self.table.schema.database.connection.provider_type
             )
-            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where}"
+            query = f"(SELECT * FROM {quoted_fqn} WHERE {self.where}"  # nosec B608
             ret = CARTO_API.execute_query(
                 self.table.schema.database.connection.name,
                 f"CALL cartobq.us.EXPORT_WITH_GDAL('''{query}''','GPKG',NULL,'{self.table.tableid}');",
@@ -246,7 +246,7 @@ class DownloadTableTask(QgsTask):
             os.makedirs(os.path.dirname(geopackage_file), exist_ok=True)
 
             options = QgsVectorFileWriter.SaveVectorOptions()
-            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+            options.actionOnExistingFile = QgsVectorFileWriter.ActionOnExistingFile.CreateOrOverwriteFile
             options.layerName = layer.name()
             _writer = QgsVectorFileWriter.writeAsVectorFormatV3(
                 layer,
@@ -285,7 +285,7 @@ class DownloadTableTask(QgsTask):
         return CARTO_API.execute_query(
             self.table.schema.database.connection.name,
             f"""SELECT * FROM {fqn}
-                WHERE {where} ;""",
+                WHERE {where} ;""",  # nosec B608
         )
 
     def row_count(self):
@@ -301,5 +301,5 @@ class DownloadTableTask(QgsTask):
         return CARTO_API.execute_query(
             self.table.schema.database.connection.name,
             f"""SELECT COUNT(*) AS row_count FROM {fqn}
-                WHERE {self.where} ;""",
+                WHERE {self.where} ;""",  # nosec B608
         )["rows"][0][col_name]

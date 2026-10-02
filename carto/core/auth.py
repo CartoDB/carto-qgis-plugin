@@ -36,7 +36,7 @@ SCOPE = " ".join(
     ]
 )
 
-TOKEN_URL = "https://auth.carto.com/oauth/token"
+OAUTH_EXCHANGE_URL = "https://auth.carto.com/oauth/token"
 
 
 class CallbackHandler(BaseHTTPRequestHandler):
@@ -59,7 +59,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 request = QgsBlockingNetworkRequest()
                 token_body = urlparse.urlencode(body).encode()
 
-                network_request = QNetworkRequest(QUrl(TOKEN_URL))
+                network_request = QNetworkRequest(QUrl(OAUTH_EXCHANGE_URL))
                 network_request.setHeader(
                     QNetworkRequest.KnownHeaders.ContentTypeHeader,
                     "application/x-www-form-urlencoded",
@@ -68,7 +68,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 result_code = request.post(
                     network_request, data=token_body, forceRefresh=True
                 )
-                if result_code != QgsBlockingNetworkRequest.NoError:
+                if result_code != QgsBlockingNetworkRequest.ErrorCode.NoError:
                     self.server.error = (
                         request.reply().content().data().decode()
                         or request.reply().errorString()
@@ -190,9 +190,7 @@ class OAuthWorkflow(QThread):
         """
         # we have to dummy a dummy request in order to abort the
         # blocking handle_request() loop
-        # pylint: disable=missing-timeout
-        requests.get(REDIRECT_URL)
-        # pylint: enable=missing-timeout
+        requests.get(REDIRECT_URL, timeout=5)
 
     def close_server(self):
         """

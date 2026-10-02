@@ -17,23 +17,13 @@ LICENSE: MIT
 --------
 """
 
-import sys
 
-if sys.version_info[:2] < (2, 7):
-    from ordereddict import OrderedDict
-    import simplejson as json_parser
-else:
-    from collections import OrderedDict
-    import json as json_parser
+from collections import OrderedDict
+import json as json_parser
+from html import escape as html_escape
 
-if sys.version_info[:2] < (3, 0):
-    from cgi import escape as html_escape
-    text = unicode
-    text_types = (unicode, str)
-else:
-    from html import escape as html_escape
-    text = str
-    text_types = (str,)
+text = str
+text_types = (str,)
 
 
 class Json2Html:

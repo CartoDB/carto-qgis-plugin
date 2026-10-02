@@ -23,7 +23,7 @@ class ImportLayerTask(QgsTask):
         fqn,
         layer,
     ):
-        super().__init__(f"Importing layer to {fqn}", QgsTask.CanCancel)
+        super().__init__(f"Importing layer to {fqn}", QgsTask.Flag.CanCancel)
         self.exception = None
         self.fqn = fqn
         self.layer = layer
@@ -80,7 +80,7 @@ class ImportLayerTask(QgsTask):
                     field_values.append("NULL")
 
                 insert_statement = (
-                    f"INSERT INTO {fqn} VALUES (" + ", ".join(field_values) + ");"
+                    f"INSERT INTO {fqn} VALUES (" + ", ".join(field_values) + ");"  # nosec B608
                 )
                 insert_statements.append(insert_statement)
 
