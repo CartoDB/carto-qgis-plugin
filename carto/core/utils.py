@@ -64,8 +64,30 @@ def quote_column_name_for_provider(value, provider_type):
         return value
 
 
-def prepare_multipart_sql(statements, provider, fqn):
+def prepare_multipart_sql(statements, provider, fqn, transaction=False):
     joined = "\n".join(statements)
+    if transaction and provider == "bigquery":
+        return [
+            f"""
+            BEGIN TRANSACTION;
+                {joined}
+            COMMIT TRANSACTION;
+            """
+        ]
+    if transaction and provider == "snowflake":
+        return [
+            f"""
+            BEGIN
+                BEGIN TRANSACTION;
+                {joined}
+                COMMIT;
+            EXCEPTION
+                WHEN OTHER THEN
+                    ROLLBACK;
+                    RAISE;
+            END;
+            """
+        ]
     if provider == "redshift":
         schema_path = ".".join(fqn.split(".")[:2])
         proc_name = f"{schema_path}.carto_{uuid.uuid4().hex}"
