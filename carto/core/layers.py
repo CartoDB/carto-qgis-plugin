@@ -247,15 +247,22 @@ class LayerTracker:
                 )
         connection = connection_from_layer(layer)
         try:
-            sql = prepare_multipart_sql(statements, provider_type, fqn)
+            sql = prepare_multipart_sql(
+                statements, provider_type, fqn, transaction=True
+            )
             for statement in sql:
                 CARTO_API.execute_query_post(connection, statement)
             iface.messageBar().pushMessage(
                 "Layer changes uploaded", level=Qgis.MessageLevel.Success, duration=5
             )
         except Exception as e:
+            if provider_type == "databricksRest":
+                outcome = "some edits may have been applied to the upstream table"
+            else:
+                outcome = "no edit was applied to the upstream table"
             iface.messageBar().pushMessage(
-                "Error uploading changes: changes could not be made in the upstream table",
+                f"Error uploading changes: {outcome}. The local layer is out of sync "
+                f"with the upstream table. {e}",
                 level=Qgis.MessageLevel.Critical,
                 duration=5,
             )
