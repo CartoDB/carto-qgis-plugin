@@ -68,31 +68,40 @@ class CartoApi(QObject):
     def is_logged_in(self):
         return self.token is not None
 
-    def get(self, endpoint, params=None, verify=True):
+    def _request(self, method, endpoint, params=None, verify=True, **kwargs):
         _params = {}
         if params:
             _params = {k: v for k, v in params.items() if v is not None}
         _params["client"] = "carto-qgis-plugin"
         url = urljoin(self.workspace_url, endpoint)
+        send = getattr(self.session, method)
 
         if self.is_self_hosted or not verify:
             with requests.packages.urllib3.warnings.catch_warnings():
                 requests.packages.urllib3.disable_warnings(
                     requests.packages.urllib3.exceptions.InsecureRequestWarning
                 )
-                response = self.session.get(
+                response = send(
                     url,
                     headers={"Authorization": f"Bearer {self.token}"},
                     params=_params,
                     verify=False,
+                    **kwargs,
                 )
         else:
-            response = self.session.get(
+            response = send(
                 url,
                 headers={"Authorization": f"Bearer {self.token}"},
                 params=_params,
+                **kwargs,
             )
         return response
+
+    def get(self, endpoint, params=None, verify=True):
+        return self._request("get", endpoint, params=params, verify=verify)
+
+    def post(self, endpoint, data=None, params=None, verify=True):
+        return self._request("post", endpoint, params=params, verify=verify, data=data)
 
     def get_json(self, endpoint, params=None):
         response = self.get(endpoint, params)
@@ -115,9 +124,12 @@ class CartoApi(QObject):
 
     def execute_query_post(self, connectionname, query):
         url = urljoin(self.base_url, f"v3/sql/{connectionname}/query")
-        response = self.session.post(
+        query = f"""
+        -- {uuid.uuid4()}
+        {query}
+        """
+        response = self.post(
             url,
-            headers={"Authorization": f"Bearer {self.token}"},
             data={"q": query},
         )
         response.raise_for_status()
