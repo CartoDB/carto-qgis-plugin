@@ -38,6 +38,9 @@ class _QObject:
     def __init__(self, *args, **kwargs):
         pass
 
+    def tr(self, text):
+        return text
+
 
 class _QMetaType:
     class Type(enum.Enum):
@@ -106,6 +109,7 @@ def _install_qgis_stubs():
         QtCore=qtcore,
         QtWidgets=_module("qgis.PyQt.QtWidgets"),
         QtGui=_module("qgis.PyQt.QtGui"),
+        QtNetwork=_module("qgis.PyQt.QtNetwork"),
         uic=uic,
     )
     modules = {
@@ -117,6 +121,7 @@ def _install_qgis_stubs():
         "qgis.PyQt.QtCore": qtcore,
         "qgis.PyQt.QtWidgets": pyqt.QtWidgets,
         "qgis.PyQt.QtGui": pyqt.QtGui,
+        "qgis.PyQt.QtNetwork": pyqt.QtNetwork,
         "qgis.PyQt.uic": uic,
     }
     sys.modules.update(modules)

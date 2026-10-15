@@ -307,23 +307,21 @@ class Table:
                         constraint_name = 'PRIMARY';
                     """  # nosec B608
         elif self.schema.database.connection.provider_type == "snowflake":
-            sql = f"""
-                    SELECT
-                        constraint_name AS column_name
-                    FROM
-                        {self.schema.database.databaseid}.information_schema.table_constraints
-                    WHERE
-                        table_name = '{self.tableid}'
-                    AND
-                        constraint_type = 'PRIMARY KEY'
-                    AND
-                        table_schema = '{self.schema.schemaid}';
-                    """  # nosec B608
+            fqn = ".".join(
+                '"' + part.replace('"', '""') + '"'
+                for part in (
+                    self.schema.database.databaseid,
+                    self.schema.schemaid,
+                    self.tableid,
+                )
+            )
+            sql = f"SHOW PRIMARY KEYS IN TABLE {fqn};"
         else:
             return None
         ret = CARTO_API.execute_query(self.schema.database.connection.name, sql)
         if len(ret["rows"]) > 0:
-            return ret["rows"][0]["column_name"]
+            row = {key.lower(): value for key, value in ret["rows"][0].items()}
+            return row["column_name"]
         return None
 
     @waitcursor
