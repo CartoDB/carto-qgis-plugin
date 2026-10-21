@@ -10,6 +10,7 @@ about=The CARTO QGIS Plugin allows you to access, visualize, and edit spatial da
 version=0.93.3
 changelog=0.93.3
     - Fix CARTO basemaps: tiles are now taken from the basemap style instead of a hard-coded URL
+    - Projects saved with an earlier version may show an empty CARTO basemap. Remove it and add it again from the Browser
     0.93.1
     - Fix saving edits to large geometries, which failed with "414 URI Too Long"
     - Saves to BigQuery and Snowflake are now all-or-nothing: if any edit fails, none is applied
