@@ -7,10 +7,14 @@ description=Seamless Cloud Data Warehouse Integration
 about=The CARTO QGIS Plugin allows you to access, visualize, and edit spatial data from leading cloud data warehouses directly within QGIS. With this plugin, you can seamlessly check out data from Google BigQuery, Snowflake, Databricks, AWS Redshift, and PostgreSQL, edit it within QGIS, and commit changes back to your data warehouse—all powered by the CARTO platform.
 
     Simply connect your cloud data warehouse to CARTO, install the QGIS plugin, and gain full control over your geospatial data in a familiar GIS environment. This enables smooth workflows for spatial data management, enrichment, and analysis while ensuring your data remains centralized and up to date in your cloud ecosystem.
-version=0.93.2
-changelog=0.93.2
+version=0.94.0
+changelog=0.94.0
     - Fix CARTO basemaps: tiles are now taken from the basemap style instead of a hard-coded URL
     - Add a CARTO basemaps API key setting (Settings > Options > CARTO)
+    0.93.1
+    - Fix saving edits to large geometries, which failed with "414 URI Too Long"
+    - Saves to BigQuery and Snowflake are now all-or-nothing: if any edit fails, none is applied
+    - Fix adding Snowflake tables that have a declared primary key
 author=CARTO
 email=support@carto.com
 tags=datawarehouses, carto, data, cloud
