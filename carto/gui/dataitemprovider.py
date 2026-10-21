@@ -1,8 +1,11 @@
+import json
+
 from qgis.PyQt import sip
 from json2html import json2html
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDialog
-from qgis.PyQt.QtCore import QCoreApplication
+from qgis.PyQt.QtCore import QCoreApplication, QUrl
+from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import (
     QgsDataItemProvider,
     QgsDataCollectionItem,
@@ -15,6 +18,8 @@ from qgis.core import (
     QgsApplication,
     QgsMessageLog,
     QgsCoordinateTransform,
+    QgsBlockingNetworkRequest,
+    QgsDataSourceUri,
 )
 from qgis.utils import iface
 from functools import partial
@@ -22,13 +27,16 @@ from functools import partial
 from carto.core.connection import CARTO_CONNECTION
 from carto.core.api import CARTO_API
 from carto.core.layers import layer_metadata
-from carto.core.utils import MAX_ROWS
+from carto.core.utils import (
+    MAX_ROWS,
+    basemap_vector_source,
+    basemap_tile_source,
+)
 from carto.gui.importdialog import ImportDialog
 from carto.gui.downloadfilteredlayerdialog import DownloadFilteredLayerDialog
 from carto.gui.authorization_manager import AUTHORIZATION_MANAGER
 from carto.core.downloadtabletask import DownloadTableTask
 from carto.gui.utils import icon
-
 
 cartoIcon = icon("carto.svg")
 databaseIcon = icon("folder.svg")
@@ -63,9 +71,19 @@ BASEMAP_STYLES = {
     "Dark Matter": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
     "Voyager": "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
 }
-BASEMAP_URL = (
-    "https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt"
-)
+
+
+def get_json(url):
+    request = QgsBlockingNetworkRequest()
+    if (
+        request.get(QNetworkRequest(QUrl(url)))
+        != QgsBlockingNetworkRequest.ErrorCode.NoError
+    ):
+        return None
+    try:
+        return json.loads(bytes(request.reply().content()))
+    except ValueError:
+        return None
 
 
 class BasemapsCollection(QgsDataCollectionItem):
@@ -76,18 +94,17 @@ class BasemapsCollection(QgsDataCollectionItem):
     def createChildren(self):
         children = []
         for name, url in BASEMAP_STYLES.items():
-            item = BasemapItem(self, name, BASEMAP_URL, url)
+            item = BasemapItem(self, name, url)
             children.append(item)
         return children
 
 
 class BasemapItem(QgsDataItem):
-    def __init__(self, parent, name, url, style):
+    def __init__(self, parent, name, style):
         QgsDataItem.__init__(
             self, QgsDataItem.Type.Custom, parent, name, "Carto/basemaps/" + name
         )
         self.setIcon(basemapIcon)
-        self.url = url
         self.style = style
         self.name = name
         self.populate()
@@ -105,8 +122,32 @@ class BasemapItem(QgsDataItem):
         return actions
 
     def add_layer(self):
-        uri = f"styleUrl={self.style}&type=xyz&url={self.url}&zmax=14&zmin=0"
-        layer = QgsVectorTileLayer(uri, self.name)
+        source = None
+        vector_source = basemap_vector_source(get_json(self.style) or {})
+        if vector_source is not None:
+            tilejson = None
+            if not vector_source.get("tiles"):
+                tilejson = get_json(vector_source["url"])
+            source = basemap_tile_source(vector_source, tilejson)
+        if source is None:
+            iface.messageBar().pushMessage(
+                "CARTO",
+                f"Could not load the {self.name} basemap style",
+                level=Qgis.MessageLevel.Warning,
+                duration=5,
+            )
+            return
+
+        tiles_url, zmin, zmax = source
+        uri = QgsDataSourceUri()
+        uri.setParam("type", "xyz")
+        uri.setParam("url", tiles_url)
+        uri.setParam("styleUrl", self.style)
+        if zmin is not None:
+            uri.setParam("zmin", str(zmin))
+        if zmax is not None:
+            uri.setParam("zmax", str(zmax))
+        layer = QgsVectorTileLayer(bytes(uri.encodedUri()).decode(), self.name)
         layer.loadDefaultStyle()
         QgsProject.instance().addMapLayer(layer)
 

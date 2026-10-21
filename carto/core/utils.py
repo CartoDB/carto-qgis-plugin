@@ -34,6 +34,24 @@ def setting(name):
         return v
 
 
+def basemap_vector_source(style):
+    # QGIS can't read the tiles from a style URL, so take them from its vector source
+    for source in style.get("sources", {}).values():
+        if source.get("type") == "vector" and (
+            source.get("tiles") or source.get("url")
+        ):
+            return source
+    return None
+
+
+def basemap_tile_source(source, tilejson=None):
+    # a source with a TileJSON "url" takes its tiles from it, keeping its own zoom range
+    source = {**(tilejson or {}), **source}
+    if not source.get("tiles"):
+        return None
+    return source["tiles"][0], source.get("minzoom"), source.get("maxzoom")
+
+
 @waitcursor
 def download_file(url, filename):
     with requests.get(url, stream=True, timeout=60) as r:
