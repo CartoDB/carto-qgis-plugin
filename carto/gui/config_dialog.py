@@ -9,8 +9,6 @@ from qgis.PyQt.QtWidgets import (
     QHBoxLayout,
     QCheckBox,
     QWidget,
-    QLabel,
-    QLineEdit,
 )
 from qgis.PyQt.QtGui import QIcon
 
@@ -19,13 +17,7 @@ from qgis.gui import (
 )
 from qgis.core import QgsSettings
 
-from carto.core.utils import (
-    setting,
-    setSetting,
-    ENABLE_LOG,
-    BASEMAPS_API_KEY,
-    BASEMAPS_API_KEY_URL,
-)
+from carto.core.utils import setting, setSetting, ENABLE_LOG
 
 pluginPath = os.path.split(os.path.dirname(__file__))[0]
 
@@ -61,15 +53,6 @@ class ConfigDialog(QDialog):
         self.enable_log_checkbox = QCheckBox("Enable debug log")
         layout.addWidget(self.enable_log_checkbox)
 
-        layout.addWidget(QLabel("Basemaps API key"))
-        self.basemaps_api_key_edit = QLineEdit()
-        layout.addWidget(self.basemaps_api_key_edit)
-        api_key_link = QLabel(
-            f'<a href="{BASEMAPS_API_KEY_URL}">Get a free CARTO basemaps API key</a>'
-        )
-        api_key_link.setOpenExternalLinks(True)
-        layout.addWidget(api_key_link)
-
         # Add some spacing
         layout.addStretch()
 
@@ -79,12 +62,10 @@ class ConfigDialog(QDialog):
     def load_settings(self):
         """Load current settings into the dialog"""
         self.enable_log_checkbox.setChecked(setting(ENABLE_LOG))
-        self.basemaps_api_key_edit.setText(setting(BASEMAPS_API_KEY) or "")
 
     def save_settings(self):
         """Save settings from the dialog"""
         setSetting(ENABLE_LOG, self.enable_log_checkbox.isChecked())
-        setSetting(BASEMAPS_API_KEY, self.basemaps_api_key_edit.text().strip())
 
     def accept(self):
         """Called when OK is clicked"""

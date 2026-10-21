@@ -1,5 +1,4 @@
 import uuid
-from urllib.parse import urlencode
 import requests
 import shutil
 from carto.gui.utils import waitcursor
@@ -17,9 +16,6 @@ from qgis.core import (
 NAMESPACE = "carto"
 
 ENABLE_LOG = "enable_log"
-BASEMAPS_API_KEY = "basemaps_api_key"
-
-BASEMAPS_API_KEY_URL = "https://carto.com/basemaps/apikey"
 
 MAX_ROWS = 1000000
 
@@ -36,10 +32,6 @@ def setting(name):
         return str(v).lower() == str(True).lower()
     else:
         return v
-
-
-def basemap_style_url(style_url, api_key):
-    return f"{style_url}?{urlencode({'key': api_key})}" if api_key else style_url
 
 
 def basemap_vector_source(style):

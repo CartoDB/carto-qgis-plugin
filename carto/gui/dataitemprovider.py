@@ -2,8 +2,8 @@ import json
 
 from qgis.PyQt import sip
 from json2html import json2html
-from qgis.PyQt.QtGui import QIcon, QDesktopServices
-from qgis.PyQt.QtWidgets import QAction, QDialog, QPushButton
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QDialog
 from qgis.PyQt.QtCore import QCoreApplication, QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import (
@@ -29,10 +29,6 @@ from carto.core.api import CARTO_API
 from carto.core.layers import layer_metadata
 from carto.core.utils import (
     MAX_ROWS,
-    BASEMAPS_API_KEY,
-    BASEMAPS_API_KEY_URL,
-    setting,
-    basemap_style_url,
     basemap_vector_source,
     basemap_tile_source,
 )
@@ -126,10 +122,8 @@ class BasemapItem(QgsDataItem):
         return actions
 
     def add_layer(self):
-        api_key = setting(BASEMAPS_API_KEY)
-        style_url = basemap_style_url(self.style, api_key)
         source = None
-        vector_source = basemap_vector_source(get_json(style_url) or {})
+        vector_source = basemap_vector_source(get_json(self.style) or {})
         if vector_source is not None:
             tilejson = None
             if not vector_source.get("tiles"):
@@ -148,7 +142,7 @@ class BasemapItem(QgsDataItem):
         uri = QgsDataSourceUri()
         uri.setParam("type", "xyz")
         uri.setParam("url", tiles_url)
-        uri.setParam("styleUrl", style_url)
+        uri.setParam("styleUrl", self.style)
         if zmin is not None:
             uri.setParam("zmin", str(zmin))
         if zmax is not None:
@@ -156,21 +150,6 @@ class BasemapItem(QgsDataItem):
         layer = QgsVectorTileLayer(bytes(uri.encodedUri()).decode(), self.name)
         layer.loadDefaultStyle()
         QgsProject.instance().addMapLayer(layer)
-
-        if not api_key:
-            self.show_api_key_hint()
-
-    def show_api_key_hint(self):
-        message = iface.messageBar().createMessage(
-            "CARTO",
-            "Get a free CARTO basemaps API key and add it in Settings > Options > CARTO.",
-        )
-        button = QPushButton("Get API key", message)
-        button.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl(BASEMAPS_API_KEY_URL))
-        )
-        message.layout().addWidget(button)
-        iface.messageBar().pushWidget(message, Qgis.MessageLevel.Info, 10)
 
 
 class ConnectionsItem(QgsDataCollectionItem):
