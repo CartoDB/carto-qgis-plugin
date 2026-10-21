@@ -42,12 +42,22 @@ def basemap_style_url(style_url, api_key):
     return f"{style_url}?{urlencode({'key': api_key})}" if api_key else style_url
 
 
-def basemap_tile_source(style):
+def basemap_vector_source(style):
     # QGIS can't read the tiles from a style URL, so take them from its vector source
     for source in style.get("sources", {}).values():
-        if source.get("type") == "vector" and source.get("tiles"):
-            return source["tiles"][0], source.get("minzoom"), source.get("maxzoom")
+        if source.get("type") == "vector" and (
+            source.get("tiles") or source.get("url")
+        ):
+            return source
     return None
+
+
+def basemap_tile_source(source, tilejson=None):
+    # a source with a TileJSON "url" takes its tiles from it, keeping its own zoom range
+    source = {**(tilejson or {}), **source}
+    if not source.get("tiles"):
+        return None
+    return source["tiles"][0], source.get("minzoom"), source.get("maxzoom")
 
 
 @waitcursor

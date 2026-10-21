@@ -33,6 +33,7 @@ from carto.core.utils import (
     BASEMAPS_API_KEY_URL,
     setting,
     basemap_style_url,
+    basemap_vector_source,
     basemap_tile_source,
 )
 from carto.gui.importdialog import ImportDialog
@@ -76,6 +77,19 @@ BASEMAP_STYLES = {
 }
 
 
+def get_json(url):
+    request = QgsBlockingNetworkRequest()
+    if (
+        request.get(QNetworkRequest(QUrl(url)))
+        != QgsBlockingNetworkRequest.ErrorCode.NoError
+    ):
+        return None
+    try:
+        return json.loads(bytes(request.reply().content()))
+    except ValueError:
+        return None
+
+
 class BasemapsCollection(QgsDataCollectionItem):
     def __init__(self, parent):
         QgsDataCollectionItem.__init__(self, parent, "Basemaps", "/Basemaps")
@@ -114,18 +128,13 @@ class BasemapItem(QgsDataItem):
     def add_layer(self):
         api_key = setting(BASEMAPS_API_KEY)
         style_url = basemap_style_url(self.style, api_key)
-        request = QgsBlockingNetworkRequest()
         source = None
-        if (
-            request.get(QNetworkRequest(QUrl(style_url)))
-            == QgsBlockingNetworkRequest.ErrorCode.NoError
-        ):
-            try:
-                source = basemap_tile_source(
-                    json.loads(bytes(request.reply().content()))
-                )
-            except ValueError:
-                pass
+        vector_source = basemap_vector_source(get_json(style_url) or {})
+        if vector_source is not None:
+            tilejson = None
+            if not vector_source.get("tiles"):
+                tilejson = get_json(vector_source["url"])
+            source = basemap_tile_source(vector_source, tilejson)
         if source is None:
             iface.messageBar().pushMessage(
                 "CARTO",
